@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acabamentos - Macário</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #1a1a2e; font-size: 14px; min-height: 100vh; }
+
+.header { background: #1a1a2e; color: #fff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 20px; font-weight: 900; color: #f6c90e; letter-spacing: 1px; }
+.header p { font-size: 11px; color: #718096; margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.user-badge { background: #2d3748; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #e2e8f0; }
+.user-badge span { color: #f6c90e; font-weight: 700; }
+.pix-info { font-size: 11px; color: #a0aec0; text-align: right; line-height: 1.7; }
+.btn-sm-hdr { background: none; border: 1px solid #4a5568; border-radius: 6px; color: #a0aec0; padding: 5px 10px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+.btn-sm-hdr:hover { border-color: #f6c90e; color: #f6c90e; }
+.btn-logout { background: none; border: 1px solid #4a5568; border-radius: 6px; color: #fc8181; padding: 5px 10px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+.btn-logout:hover { border-color: #fc8181; background: rgba(252,129,129,0.1); }
+
+.tabs { background: #fff; border-bottom: 2px solid #e2e8f0; display: flex; padding: 0 24px; overflow-x: auto; }
+.tab { padding: 13px 20px; cursor: pointer; font-weight: 700; font-size: 12px; color: #718096; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+.tab.active { color: #1a1a2e; border-bottom-color: #f6c90e; }
+.tab:hover:not(.active) { color: #4a5568; background: #fafafa; }
+
+.content { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+.section { display: none; }
+.section.active { display: block; }
+
+.card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); border: 1px solid #e8ecf0; }
+.card-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #a0aec0; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #edf2f7; }
+
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #718096; }
+.field label .req { color: #e53e3e; margin-left: 2px; }
+.field input, .field select { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #1a1a2e; background: #fff; outline: none; font-family: inherit; transition: border-color 0.2s; }
+.field input:focus, .field select:focus { border-color: #f6c90e; box-shadow: 0 0 0 3px rgba(246,201,14,0.12); }
+
+/* Tabela itens */
+.items-wrap { overflow-x: auto; }
+table.items { width: 100%; border-collapse: collapse; min-width: 960px; }
+table.items thead th { background: #1a1a2e; color: #f6c90e; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; padding: 9px 6px; text-align: left; font-weight: 700; white-space: nowrap; }
+table.items thead th.r { text-align: right; }
+table.items tbody tr { border-bottom: 1px solid #edf2f7; }
+table.items tbody tr:hover { background: #fafbfc; }
+table.items td { padding: 4px 3px; vertical-align: middle; }
+table.items td input, table.items td select { border: 1.5px solid #e2e8f0; border-radius: 6px; padding: 6px 7px; font-size: 12px; width: 100%; background: #fff; outline: none; font-family: inherit; color: #1a1a2e; transition: border-color 0.2s; }
+table.items td input:focus, table.items td select:focus { border-color: #f6c90e; }
+.fc { background: #f0fff4; border: 1.5px solid #9ae6b4; border-radius: 6px; padding: 6px 7px; font-size: 12px; font-weight: 700; color: #276749; text-align: right; display: block; width: 100%; }
+.fm { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 7px; font-size: 12px; color: #718096; text-align: right; display: block; width: 100%; }
+
+.btn-del { background: none; border: 1.5px solid #fed7d7; border-radius: 6px; color: #e53e3e; width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto; transition: all 0.2s; }
+.btn-del:hover { background: #fff5f5; }
+.btn-add-row { border: 2px dashed #cbd5e0; background: none; border-radius: 8px; color: #718096; padding: 10px; width: 100%; cursor: pointer; font-size: 13px; font-weight: 700; transition: all 0.2s; margin-top: 10px; }
+.btn-add-row:hover { border-color: #f6c90e; color: #1a1a2e; background: #fffbeb; }
+
+.totals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+.total-box { background: #f7fafc; border-radius: 10px; padding: 14px 16px; border: 1px solid #e2e8f0; }
+.total-box.dest { background: #1a1a2e; }
+.total-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aec0; display: block; margin-bottom: 4px; }
+.total-box .val { font-size: 22px; font-weight: 800; color: #1a1a2e; }
+.total-box.dest .val { color: #f6c90e; }
+
+.btn-row { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; flex-wrap: wrap; }
+.btn { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-cancel { background: #fff; color: #718096; border-color: #e2e8f0; }
+.btn-save { background: #1a1a2e; color: #f6c90e; border-color: #1a1a2e; }
+.btn-save:hover:not(:disabled) { background: #2d3748; }
+.btn-export { background: #e53e3e; color: #fff; border-color: #e53e3e; }
+.btn-export:hover:not(:disabled) { background: #c53030; }
+
+/* Histórico */
+.hist-filters { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.hist-filters .field { min-width: 150px; }
+.btn-filter { background: #1a1a2e; color: #f6c90e; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+.resumo-mes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.res-box { background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #e2e8f0; }
+.res-box.dest { background: #1a1a2e; }
+.res-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aec0; display: block; margin-bottom: 4px; }
+.res-box .val { font-size: 18px; font-weight: 800; color: #1a1a2e; }
+.res-box.dest .val { color: #f6c90e; }
+
+table.hist { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.hist thead th { background: #f7fafc; font-size: 10px; text-transform: uppercase; color: #718096; font-weight: 700; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+table.hist tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #2d3748; }
+table.hist tbody tr:hover { background: #fafbfc; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.b-Cristina { background: #ebf8ff; color: #2b6cb0; }
+.b-Alcalima { background: #fefce8; color: #92400e; }
+.b-Ipe { background: #f0fff4; color: #276749; }
+.b-Mix { background: #faf5ff; color: #6b21a8; }
+.b-outro { background: #f7fafc; color: #4a5568; }
+.badge-recebido { background: #f0fff4; color: #276749; }
+.badge-pendente { background: #fffbeb; color: #92400e; }
+
+.action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.bsm { padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1.5px solid; background: #fff; transition: all 0.15s; white-space: nowrap; }
+.bsm-pdf { color: #e53e3e; border-color: #fed7d7; }
+.bsm-pdf:hover { background: #fff5f5; }
+.bsm-del { color: #e53e3e; border-color: #fed7d7; }
+.bsm-del:hover { background: #fff5f5; }
+
+/* Recebimentos */
+.rec-painel { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
+.rec-box { border-radius: 12px; padding: 18px 20px; }
+.rec-box.pendente { background: #fffbeb; border: 2px solid #f6c90e; }
+.rec-box.recebido { background: #f0fff4; border: 2px solid #9ae6b4; }
+.rec-box.total { background: #1a1a2e; border: 2px solid #1a1a2e; }
+.rec-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+.rec-box.pendente label { color: #92400e; }
+.rec-box.recebido label { color: #276749; }
+.rec-box.total label { color: #718096; }
+.rec-box .val { font-size: 24px; font-weight: 900; }
+.rec-box.pendente .val { color: #92400e; }
+.rec-box.recebido .val { color: #276749; }
+.rec-box.total .val { color: #f6c90e; }
+.rec-box .sub { font-size: 12px; margin-top: 4px; }
+.rec-box.pendente .sub { color: #b7791f; }
+.rec-box.recebido .sub { color: #48bb78; }
+
+table.rec { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.rec thead th { background: #f7fafc; font-size: 10px; text-transform: uppercase; color: #718096; font-weight: 700; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+table.rec tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+table.rec tbody tr:hover { background: #fafbfc; }
+
+.toggle-recebido { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.toggle-recebido input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: #276749; }
+.toggle-recebido span { font-size: 12px; font-weight: 600; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal-overlay.hidden { display: none; }
+.modal { background: #fff; border-radius: 16px; padding: 28px; width: 460px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal h2 { font-size: 18px; font-weight: 800; color: #1a1a2e; margin-bottom: 6px; }
+.modal p { font-size: 13px; color: #718096; margin-bottom: 20px; }
+.modal .field { margin-bottom: 14px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.btn-mc { background: #fff; color: #718096; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px 18px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: inherit; }
+.btn-ms { background: #1a1a2e; color: #f6c90e; border: none; border-radius: 8px; padding: 9px 18px; cursor: pointer; font-size: 13px; font-weight: 700; font-family: inherit; }
+.btn-mwpp { background: #25D366; color: #fff; border: none; border-radius: 8px; padding: 11px 24px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; width: 100%; }
+
+.empty-state { text-align: center; padding: 50px; color: #a0aec0; }
+.empty-state .ico { font-size: 40px; margin-bottom: 12px; }
+.alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.alert-success { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+.alert-error { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+.pix-warning { background: #fffbeb; border: 1.5px solid #f6c90e; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 12px; display: none; align-items: center; gap: 8px; }
+.pix-warning.show { display: flex; }
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== RESPONSIVO MOBILE ===== */
+@media (max-width: 640px) {
+  .header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+  .header h1 { font-size: 16px; }
+  .pix-info { display: none; }
+  .user-badge { font-size: 11px; padding: 5px 8px; }
+  .btn-sm-hdr, .btn-logout { padding: 5px 8px; font-size: 10px; }
+  .tabs { padding: 0 6px; }
+  .tab { padding: 10px 10px; font-size: 10px; letter-spacing: 0; }
+  .content { padding: 12px; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .resumo-mes { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .res-box { padding: 10px 12px; }
+  .res-box .val { font-size: 14px; }
+  .totals-grid { grid-template-columns: 1fr 1fr; }
+  .totals-grid .total-box:last-child { grid-column: span 2; }
+  .total-box .val { font-size: 18px; }
+  .rec-painel { grid-template-columns: 1fr; gap: 10px; }
+  .rec-box .val { font-size: 20px; }
+  .btn-row { flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 45%; justify-content: center; font-size: 12px; padding: 10px 6px; }
+  .card { padding: 14px; }
+  .hist-filters { flex-direction: column; align-items: stretch; }
+  .hist-filters .field { min-width: unset; }
+  table.hist thead { display: none; }
+  table.hist tbody tr { display: block; background: #fff; border: 1px solid #e8ecf0; border-radius: 10px; margin-bottom: 10px; padding: 12px; }
+  table.hist tbody td { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+  table.hist tbody td:last-child { border-bottom: none; padding-top: 8px; justify-content: flex-end; gap: 6px; }
+  table.hist tbody td[data-label]::before { content: attr(data-label); font-size: 10px; font-weight: 700; text-transform: uppercase; color: #a0aec0; white-space: nowrap; margin-right: 8px; }
+  table.rec thead { display: none; }
+  table.rec tbody tr { display: block; background: #fff; border: 1px solid #e8ecf0; border-radius: 10px; margin-bottom: 10px; padding: 12px; }
+  table.rec tbody td { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+  table.rec tbody td:last-child { border-bottom: none; padding-top: 8px; }
+  table.rec tbody td[data-label]::before { content: attr(data-label); font-size: 10px; font-weight: 700; text-transform: uppercase; color: #a0aec0; white-space: nowrap; margin-right: 8px; }
+  .modal { padding: 18px 14px; }
+  .modal h2 { font-size: 15px; }
+}
+
+/* ===== NOTIFICAÇÕES ===== */
+.notif-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
+.notif { background: #1a1a2e; border-left: 4px solid #f6c90e; border-radius: 10px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; display: flex; align-items: flex-start; gap: 10px; }
+.notif.removing { animation: slideOut 0.3s ease forwards; }
+.notif-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.notif-body { flex: 1; }
+.notif-title { font-size: 12px; font-weight: 700; color: #f6c90e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.notif-msg { font-size: 13px; color: #e2e8f0; line-height: 1.4; }
+.notif-time { font-size: 10px; color: #718096; margin-top: 4px; }
+.notif-close { background: none; border: none; color: #718096; cursor: pointer; font-size: 16px; padding: 0; line-height: 1; flex-shrink: 0; }
+.notif-close:hover { color: #fff; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+.notif-badge { position: fixed; bottom: 20px; right: 20px; background: #f6c90e; color: #1a1a2e; border-radius: 50%; width: 28px; height: 28px; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; z-index: 9998; cursor: pointer; box-shadow: 0 4px 12px rgba(246,201,14,0.4); }
+</style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Acabamentos">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="theme-color" content="#1a1a2e">
+</head>
+<body>
+
+<!-- NOTIFICAÇÕES -->
+<div id="notif-container" class="notif-container"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>ACABAMENTOS - MACÁRIO</h1>
+    <p>Romaneio de Entrega</p>
+  </div>
+  <div class="header-right">
+    <div class="pix-info">
+      <div id="pix-label" style="color:#a0aec0;font-size:11px">PIX não configurado</div>
+    </div>
+    <button class="btn-sm-hdr" onclick="abrirModalPix()">⚙ PIX</button>
+    <div class="user-badge">Olá, <span id="user-nome">—</span></div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('novo',this)">➕ Novo Romaneio</div>
+  <div class="tab" onclick="showTab('historico',this)">📋 Histórico</div>
+  <div class="tab" onclick="showTab('recebimentos',this)">💰 Recebimentos</div>
+</div>
+
+<div class="content">
+  <div id="alert-box" style="display:none"></div>
+
+  <!-- ===== NOVO ROMANEIO ===== -->
+  <div id="tab-novo" class="section active">
+    <div id="pix-warning" class="pix-warning">⚠ Configure sua Chave PIX antes de exportar.</div>
+
+    <div class="card">
+      <div class="card-title">Dados do Romaneio</div>
+      <div class="grid-4">
+        <div class="field">
+          <label>Cliente <span class="req">*</span></label>
+          <select id="sel-cliente" onchange="onClienteChange()">
+            <option value="">Selecione...</option>
+            <option value="Cristina">Gráfica Cristina</option>
+            <option value="Alcalima">Alcalima</option>
+            <option value="Ipe">Ypê / IPE</option>
+            <option value="Mix">Mix</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data <span class="req">*</span></label>
+          <input type="date" id="inp-data">
+        </div>
+        <div class="field">
+          <label>Quem Retirou</label>
+          <input type="text" id="inp-quem" placeholder="Nome da pessoa">
+        </div>
+        <div class="field">
+          <label>WhatsApp do Cliente</label>
+          <input type="text" id="inp-tel" placeholder="5511999999999">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Itens</div>
+      <div class="items-wrap">
+        <table class="items">
+          <thead>
+            <tr>
+              <th style="width:155px">Modelo</th>
+              <th style="width:160px">Descrição da Sacola</th>
+              <th style="width:50px" class="r">Vias</th>
+              <th style="width:95px" class="r">Qtde Pacotes</th>
+              <th style="width:95px" class="r">Qtde/Pacote</th>
+              <th style="width:90px" class="r">Total Unid.</th>
+              <th style="width:100px" class="r">Vlr Milheiro</th>
+              <th style="width:105px" class="r">Valor a Receber</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-itens"></tbody>
+        </table>
+      </div>
+      <button class="btn-add-row" onclick="addItem()">+ Adicionar Linha</button>
+      <div class="totals-grid">
+        <div class="total-box"><label>Total Unidades</label><div class="val" id="tot-unid">0</div></div>
+        <div class="total-box"><label>Total Pacotes</label><div class="val" id="tot-pac">0</div></div>
+        <div class="total-box dest"><label>Total a Receber</label><div class="val" id="tot-val">R$ 0,00</div></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="limpar()">Limpar</button>
+      <button class="btn btn-save" id="btn-salvar" onclick="salvar()">💾 Salvar</button>
+      <button class="btn btn-export" id="btn-exportar" onclick="exportarEWpp()">📲 Exportar PDF + WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- ===== HISTÓRICO ===== -->
+  <div id="tab-historico" class="section">
+    <div class="card">
+      <div class="card-title">Filtros</div>
+      <div class="hist-filters">
+        <div class="field"><label>Cliente</label>
+          <select id="fil-cliente">
+            <option value="">Todos</option>
+            <option value="Cristina">Gráfica Cristina</option>
+            <option value="Alcalima">Alcalima</option>
+            <option value="Ipe">Ypê / IPE</option>
+            <option value="Mix">Mix</option>
+          </select>
+        </div>
+        <div class="field"><label>Mês</label><input type="month" id="fil-mes"></div>
+        <button class="btn-filter" onclick="renderHist()">Filtrar</button>
+      </div>
+    </div>
+    <div class="resumo-mes">
+      <div class="res-box"><label>Romaneios</label><div class="val" id="res-rom">—</div></div>
+      <div class="res-box"><label>Total Unidades</label><div class="val" id="res-unid">—</div></div>
+      <div class="res-box"><label>Total Pacotes</label><div class="val" id="res-pac">—</div></div>
+      <div class="res-box dest"><label>Total a Receber</label><div class="val" id="res-val">—</div></div>
+    </div>
+    <div class="card" id="hist-card">
+      <div class="empty-state"><div class="ico">📋</div><p>Use os filtros para buscar romaneios.</p></div>
+    </div>
+  </div>
+
+  <!-- ===== RECEBIMENTOS ===== -->
+  <div id="tab-recebimentos" class="section">
+    <div class="card">
+      <div class="card-title">Filtros</div>
+      <div class="hist-filters">
+        <div class="field"><label>Cliente</label>
+          <select id="rec-fil-cliente">
+            <option value="">Todos</option>
+            <option value="Cristina">Gráfica Cristina</option>
+            <option value="Alcalima">Alcalima</option>
+            <option value="Ipe">Ypê / IPE</option>
+            <option value="Mix">Mix</option>
+          </select>
+        </div>
+        <div class="field"><label>Mês</label><input type="month" id="rec-fil-mes"></div>
+        <button class="btn-filter" onclick="renderRecebimentos()">Filtrar</button>
+      </div>
+    </div>
+
+    <div class="rec-painel">
+      <div class="rec-box pendente">
+        <label>⏳ A Receber</label>
+        <div class="val" id="rec-pendente">R$ 0,00</div>
+        <div class="sub" id="rec-pendente-qtd">0 romaneios</div>
+      </div>
+      <div class="rec-box recebido">
+        <label>✅ Recebido</label>
+        <div class="val" id="rec-recebido">R$ 0,00</div>
+        <div class="sub" id="rec-recebido-qtd">0 romaneios</div>
+      </div>
+      <div class="rec-box total">
+        <label>Total do Período</label>
+        <div class="val" id="rec-total">R$ 0,00</div>
+        <div class="sub" style="color:#a0aec0" id="rec-total-qtd">0 romaneios</div>
+      </div>
+    </div>
+
+    <div class="card" id="rec-card">
+      <div class="empty-state"><div class="ico">💰</div><p>Use os filtros para ver os recebimentos.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PIX -->
+<div class="modal-overlay hidden" id="modal-pix">
+  <div class="modal">
+    <h2>⚙ Configurar Chave PIX</h2>
+    <p>Aparecerá em todos os PDFs. Obrigatório para exportar.</p>
+    <div class="field"><label>Chave PIX <span style="color:#e53e3e">*</span></label>
+      <input type="text" id="inp-pix" placeholder="CPF, CNPJ, e-mail, telefone..."></div>
+    <div class="field"><label>Nome do Titular</label>
+      <input type="text" id="inp-pix-nome" placeholder="Ex: Renato Macario Lima"></div>
+    <div class="field"><label>Banco</label>
+      <input type="text" id="inp-pix-banco" placeholder="Ex: Nubank"></div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModalPix()">Cancelar</button>
+      <button class="btn-ms" onclick="salvarPix()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPORT -->
+<div class="modal-overlay hidden" id="modal-export">
+  <div class="modal" style="text-align:center;max-width:460px">
+    <div style="font-size:44px;margin-bottom:10px">📥</div>
+    <h2 style="margin-bottom:8px">PDF salvo nos Downloads!</h2>
+    <p style="margin-bottom:16px">Para enviar ao cliente com o PDF anexado, siga os passos:</p>
+    <div style="background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:10px;padding:14px 16px;margin-bottom:14px;text-align:left">
+      <div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start">
+        <span style="background:#25D366;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">1</span>
+        <span style="font-size:13px;color:#276749">Clique em <strong>"Abrir WhatsApp"</strong> — a conversa abrirá com a mensagem pronta</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start">
+        <span style="background:#25D366;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">2</span>
+        <span style="font-size:13px;color:#276749">Antes de enviar, clique no <strong>📎 clipe de anexo</strong></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="background:#25D366;color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">3</span>
+        <span style="font-size:13px;color:#276749">Selecione o PDF na pasta <strong>Downloads</strong> e envie!</span>
+      </div>
+    </div>
+    <div style="background:#fffbeb;border:1px solid #f6c90e;border-radius:8px;padding:9px 14px;margin-bottom:16px;font-size:12px;color:#92400e;text-align:left">
+      ⚠ O WhatsApp Web não permite anexar PDF automaticamente — o clipe é manual mas rápido!
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-mc" onclick="fecharModalExport()">Fechar</button>
+      <button class="btn-mwpp" id="btn-abrir-wpp">📲 Abrir WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://nmefykzybphcmktuhccf.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZWZ5a3p5YnBoY21rdHVoY2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MjA5NzEsImV4cCI6MjA5Mjk5Njk3MX0.R-kwegAfj089c2zmgTzQyfkpgbcsWfmcmu_KZT9hJpA';
+const H = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+
+// ===== AUTH =====
+const usuarioLogado = JSON.parse(sessionStorage.getItem('usuario_acab') || 'null');
+if (!usuarioLogado) { window.location.href = 'login.html'; }
+else { document.getElementById('user-nome').textContent = usuarioLogado.nome; }
+
+function logout() {
+  sessionStorage.removeItem('usuario_acab');
+  window.location.href = 'login.html';
+}
+
+// ===== SUPABASE =====
+async function sbGet(table, params='') {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}${params}`, { headers: H });
+  if (!r.ok) throw new Error('Erro ao carregar');
+  return r.json();
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, { method:'POST', headers: H, body: JSON.stringify(body) });
+  return r.json();
+}
+async function sbPatch(table, id, body) {
+  const h = { ...H, 'Prefer': 'return=representation' };
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, { method:'PATCH', headers: h, body: JSON.stringify(body) });
+  return r.json();
+}
+async function sbDelete(table, id) {
+  await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, { method:'DELETE', headers: H });
+}
+async function sbUpsert(table, body) {
+  const h = { ...H, 'Prefer': 'return=representation,resolution=merge-duplicates' };
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, { method:'POST', headers: h, body: JSON.stringify(body) });
+  return r.json();
+}
+
+// ===== DADOS CLIENTES =====
+const DB = {
+  Cristina: { nome:'Gráfica Cristina', modelos:[
+    { desc:'Sacola Grande 2 vias', vias:2, mil:210 },
+    { desc:'Sacola Média 2 vias',  vias:2, mil:190 },
+    { desc:'Sacola Pequena 1 via', vias:1, mil:170 },
+  ]},
+  Alcalima: { nome:'Alcalima', modelos:[
+    { desc:'Saco 1 via',         vias:1, mil:160 },
+    { desc:'Saco 2 vias',        vias:2, mil:180 },
+    { desc:'Saco 1 via + Alça',  vias:1, mil:200 },
+    { desc:'Saco 2 vias + Alça', vias:2, mil:220 },
+  ]},
+  Ipe: { nome:'Ypê / IPE', modelos:[
+    { desc:'Garrafa',      vias:1, mil:180 },
+    { desc:'Porta Talher', vias:1, mil:40  },
+  ]},
+  Mix: { nome:'Mix', modelos:[
+    { desc:'Sacola Média com Ilhós + Alça', vias:2, mil:230 },
+  ]}
+};
+
+let pixConfig = { chave:'', nome:'', banco:'' };
+let telsCache = {};
+let idc = 0;
+
+// ===== INIT =====
+window.onload = async () => {
+  document.getElementById('inp-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fil-mes').value = new Date().toISOString().slice(0,7);
+  document.getElementById('rec-fil-mes').value = new Date().toISOString().slice(0,7);
+  await carregarConfig();
+  addItem();
+  iniciarRealtime();
+  iniciarAutoRefresh();
+};
+
+async function carregarConfig() {
+  try {
+    const rows = await sbGet('configuracoes', '?chave=in.(pix_chave,pix_nome,pix_banco,tels_clientes)');
+    if (Array.isArray(rows)) {
+      rows.forEach(r => {
+        if (r.chave==='pix_chave') pixConfig.chave = r.valor||'';
+        if (r.chave==='pix_nome')  pixConfig.nome  = r.valor||'';
+        if (r.chave==='pix_banco') pixConfig.banco = r.valor||'';
+        if (r.chave==='tels_clientes') { try { telsCache = JSON.parse(r.valor); } catch(e){} }
+      });
+    }
+  } catch(e) {}
+  atualizarHeaderPix();
+  verificarPix();
+}
+
+function atualizarHeaderPix() {
+  const lbl = document.getElementById('pix-label');
+  if (pixConfig.chave) {
+    lbl.innerHTML = `<span style="color:#f6c90e;font-weight:700">PIX: ${pixConfig.chave}</span>${pixConfig.nome?'<br><span style="color:#a0aec0">'+pixConfig.nome+'</span>':''}`;
+  } else {
+    lbl.innerHTML = '<span style="color:#e53e3e;font-weight:700">⚠ PIX não configurado</span>';
+  }
+}
+function verificarPix() {
+  const w = document.getElementById('pix-warning');
+  if (!pixConfig.chave) w.classList.add('show'); else w.classList.remove('show');
+}
+
+// ===== TABS =====
+function showTab(t, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  el.classList.add('active');
+  if (t==='historico') renderHist();
+  if (t==='recebimentos') renderRecebimentos();
+}
+
+// ===== MODAL PIX =====
+function abrirModalPix() {
+  document.getElementById('inp-pix').value = pixConfig.chave;
+  document.getElementById('inp-pix-nome').value = pixConfig.nome;
+  document.getElementById('inp-pix-banco').value = pixConfig.banco;
+  document.getElementById('modal-pix').classList.remove('hidden');
+}
+function fecharModalPix() { document.getElementById('modal-pix').classList.add('hidden'); }
+async function salvarPix() {
+  const chave = document.getElementById('inp-pix').value.trim();
+  if (!chave) { alert('Informe a chave PIX!'); return; }
+  pixConfig = { chave, nome: document.getElementById('inp-pix-nome').value.trim(), banco: document.getElementById('inp-pix-banco').value.trim() };
+  await sbUpsert('configuracoes', [
+    { chave:'pix_chave', valor:pixConfig.chave },
+    { chave:'pix_nome',  valor:pixConfig.nome  },
+    { chave:'pix_banco', valor:pixConfig.banco  },
+  ]);
+  fecharModalPix(); atualizarHeaderPix(); verificarPix();
+  alerta('PIX salvo!', 'success');
+}
+
+// ===== CLIENTE =====
+function onClienteChange() {
+  const c = document.getElementById('sel-cliente').value;
+  if (!c) return;
+  document.getElementById('tbody-itens').innerHTML = '';
+  idc = 0;
+  DB[c].modelos.forEach(m => addItem(m));
+  if (telsCache[c]) document.getElementById('inp-tel').value = telsCache[c];
+}
+
+// ===== ITENS =====
+function addItem(m=null) {
+  const c = document.getElementById('sel-cliente').value;
+  const id = ++idc;
+  const tr = document.createElement('tr');
+  tr.id = 'r'+id;
+  let opts = '<option value="">Outro...</option>';
+  if (c && DB[c]) DB[c].modelos.forEach(x => { opts += `<option value="${x.desc}" data-mil="${x.mil}" data-vias="${x.vias}">${x.desc}</option>`; });
+  const vias = m?m.vias:'';
+  const milFmt = m?'R$ '+m.mil.toFixed(2).replace('.',','):'—';
+  tr.innerHTML = `
+    <td>
+      <select id="sel${id}" onchange="onMod(${id})">${opts}</select>
+      <input type="text" id="cus${id}" placeholder="Modelo livre..." style="display:none;margin-top:3px">
+    </td>
+    <td><input type="text" id="dsac${id}" placeholder="Ex: JustBurguer - G29"></td>
+    <td><input type="number" id="via${id}" value="${vias}" min="1" max="2" style="width:46px;text-align:center" oninput="calc(${id})"></td>
+    <td><input type="number" id="npa${id}" value="" min="0" placeholder="0" style="text-align:right" oninput="calc(${id})"></td>
+    <td><input type="number" id="qpa${id}" value="" min="0" placeholder="0" style="text-align:right" oninput="calc(${id})"></td>
+    <td><span class="fc" id="tun${id}">0</span></td>
+    <td><span class="fm" id="mil${id}">${milFmt}</span></td>
+    <td><span class="fc" id="val${id}">R$ 0,00</span></td>
+    <td><button class="btn-del" onclick="delItem(${id})">×</button></td>`;
+  document.getElementById('tbody-itens').appendChild(tr);
+  if (m) document.getElementById('sel'+id).value = m.desc;
+}
+
+function onMod(id) {
+  const sel = document.getElementById('sel'+id);
+  const cus = document.getElementById('cus'+id);
+  const opt = sel.options[sel.selectedIndex];
+  if (!sel.value) {
+    cus.style.display='block';
+    document.getElementById('via'+id).value='';
+    document.getElementById('mil'+id).textContent='—';
+  } else {
+    cus.style.display='none';
+    document.getElementById('via'+id).value=opt.dataset.vias;
+    document.getElementById('mil'+id).textContent='R$ '+parseFloat(opt.dataset.mil).toFixed(2).replace('.',',');
+  }
+  calc(id);
+}
+
+function calc(id) {
+  const np=parseFloat(document.getElementById('npa'+id).value)||0;
+  const qp=parseFloat(document.getElementById('qpa'+id).value)||0;
+  const ms=document.getElementById('mil'+id).textContent;
+  const mil=parseFloat(ms.replace('R$','').replace(',','.').trim())||0;
+  const tu=np*qp, v=(mil/1000)*tu;
+  document.getElementById('tun'+id).textContent=tu.toLocaleString('pt-BR');
+  document.getElementById('val'+id).textContent='R$ '+v.toFixed(2).replace('.',',');
+  calcTots();
+}
+
+function calcTots() {
+  let tu=0,tp=0,tv=0;
+  document.querySelectorAll('#tbody-itens tr').forEach(tr => {
+    const id=tr.id.slice(1);
+    tu+=(parseFloat(document.getElementById('npa'+id)?.value)||0)*(parseFloat(document.getElementById('qpa'+id)?.value)||0);
+    tp+=parseFloat(document.getElementById('npa'+id)?.value)||0;
+    const vs=document.getElementById('val'+id)?.textContent||'R$ 0,00';
+    tv+=parseFloat(vs.replace('R$','').replace(',','.').trim())||0;
+  });
+  document.getElementById('tot-unid').textContent=tu.toLocaleString('pt-BR');
+  document.getElementById('tot-pac').textContent=tp.toLocaleString('pt-BR');
+  document.getElementById('tot-val').textContent='R$ '+tv.toFixed(2).replace('.',',');
+}
+
+function delItem(id) { document.getElementById('r'+id)?.remove(); calcTots(); }
+
+function coletaItens() {
+  const itens=[];
+  document.querySelectorAll('#tbody-itens tr').forEach(tr => {
+    const id=tr.id.slice(1);
+    const sel=document.getElementById('sel'+id);
+    const cus=document.getElementById('cus'+id);
+    const desc=sel.value!==''?sel.value:(cus.value||'');
+    const dsac=document.getElementById('dsac'+id).value.trim();
+    const vias=parseInt(document.getElementById('via'+id).value)||0;
+    const np=parseFloat(document.getElementById('npa'+id).value)||0;
+    const qp=parseFloat(document.getElementById('qpa'+id).value)||0;
+    const ms=document.getElementById('mil'+id).textContent;
+    const mil=parseFloat(ms.replace('R$','').replace(',','.').trim())||0;
+    const tu=np*qp, v=(mil/1000)*tu;
+    if (desc||np>0) itens.push({desc,dsac,vias,np,qp,tu,mil,v});
+  });
+  return itens;
+}
+
+function coletaForm() {
+  const cli=document.getElementById('sel-cliente').value;
+  return { cli, nome:DB[cli]?.nome||cli,
+    data:document.getElementById('inp-data').value,
+    quem:document.getElementById('inp-quem').value.trim(),
+    tel:document.getElementById('inp-tel').value.trim(),
+    itens:coletaItens() };
+}
+
+// ===== SALVAR =====
+async function salvar() {
+  const f=coletaForm();
+  if (!f.cli)  { alerta('Selecione um cliente!','error'); return; }
+  if (!f.data) { alerta('Informe a data!','error'); return; }
+  if (!f.itens.length) { alerta('Adicione pelo menos um item!','error'); return; }
+  setBtnLoading('btn-salvar',true);
+  try {
+    const totalUnid=f.itens.reduce((s,i)=>s+i.tu,0);
+    const totalPac=f.itens.reduce((s,i)=>s+i.np,0);
+    const totalVal=f.itens.reduce((s,i)=>s+i.v,0);
+    if (f.tel) { telsCache[f.cli]=f.tel; await sbUpsert('configuracoes',[{chave:'tels_clientes',valor:JSON.stringify(telsCache)}]); }
+    const [rom]=await sbPost('romaneios',{ cliente:f.cli, nome_cliente:f.nome, data:f.data, quem_retirou:f.quem, tel_cliente:f.tel, total_unid:totalUnid, total_pac:totalPac, total_val:totalVal });
+    if (!rom?.id) throw new Error('Erro ao salvar');
+    await sbPost('romaneio_itens', f.itens.map(i=>({ romaneio_id:rom.id, descricao_modelo:i.desc, descricao_sacola:i.dsac, vias:i.vias, qtd_pacotes:i.np, qtd_por_pacote:i.qp, total_unid:i.tu, valor_milheiro:i.mil, valor_receber:i.v })));
+    // Cria registro de recebimento pendente
+    await sbPost('recebimentos',{ romaneio_id:rom.id, cliente:f.cli, nome_cliente:f.nome, data_romaneio:f.data, valor_total:totalVal, valor_recebido:0, recebido:false });
+    alerta('Romaneio salvo!','success');
+    limpar();
+  } catch(e) { alerta('Erro: '+e.message,'error'); }
+  setBtnLoading('btn-salvar',false);
+}
+
+function limpar() {
+  document.getElementById('sel-cliente').value='';
+  document.getElementById('inp-quem').value='';
+  document.getElementById('inp-tel').value='';
+  document.getElementById('inp-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('tbody-itens').innerHTML='';
+  idc=0; addItem(); calcTots();
+}
+
+// ===== EXPORTAR PDF + WHATSAPP =====
+async function exportarEWpp(romObj=null) {
+  if (!pixConfig.chave) { alerta('Configure o PIX antes de exportar!','error'); abrirModalPix(); return; }
+  let r=romObj;
+  if (!r) {
+    const f=coletaForm();
+    if (!f.cli)  { alerta('Selecione um cliente!','error'); return; }
+    if (!f.itens.length) { alerta('Adicione pelo menos um item!','error'); return; }
+    r={...f, totalUnid:f.itens.reduce((s,i)=>s+i.tu,0), totalPac:f.itens.reduce((s,i)=>s+i.np,0), totalVal:f.itens.reduce((s,i)=>s+i.v,0)};
+  }
+  setBtnLoading('btn-exportar',true);
+  gerarEAbrirPDF(r);
+  setBtnLoading('btn-exportar',false);
+}
+
+function gerarEAbrirPDF(r) {
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=297,M=14; let y=M;
+
+  // Faixa título
+  doc.setFillColor(246,201,14); doc.rect(M,y,W-M*2,10,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(26,26,46);
+  doc.text('ACABAMENTOS - MACÁRIO',W/2,y+7,{align:'center'});
+  y+=12;
+
+  // Faixa PIX
+  doc.setFillColor(26,26,46); doc.rect(M,y,W-M*2,11,'F');
+  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(160,165,180);
+  doc.text('PIX:',M+4,y+5); doc.setTextColor(246,201,14); doc.setFont('helvetica','bold');
+  doc.text(pixConfig.chave,M+14,y+5);
+  if (pixConfig.nome) { doc.setTextColor(255,255,255); doc.setFont('helvetica','normal'); doc.text(pixConfig.nome,M+4,y+9.5); }
+  if (pixConfig.banco) { doc.setTextColor(160,165,180); doc.text(pixConfig.banco,W-M-4,y+7,{align:'right'}); }
+  y+=14;
+
+  // Dados romaneio
+  doc.setFillColor(240,242,245); doc.rect(M,y,W-M*2,14,'F');
+  doc.setDrawColor(220,225,230); doc.rect(M,y,W-M*2,14);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(26,26,46);
+  doc.text('ROMANEIO DE ENTREGA',M+4,y+6);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(50,60,80);
+  const dtFmt=r.data?r.data.split('-').reverse().join('/'):'—';
+  doc.text(`Cliente: ${r.nome||r.cli}`,M+4,y+11.5);
+  doc.text(`Data: ${dtFmt}`,W/2-10,y+11.5);
+  doc.text(`Retirado por: ${r.quem||'—'}`,W-M-4,y+11.5,{align:'right'});
+  y+=18;
+
+  // Colunas — total: 60+55+12+24+24+26+30+38 = 269mm
+  const cols=[
+    {h:'Modelo / Descrição', x:M,      w:60},
+    {h:'Descrição Sacola',   x:M+60,   w:55},
+    {h:'Vias',               x:M+115,  w:12},
+    {h:'Qtde Pacotes',       x:M+127,  w:24},
+    {h:'Qtde/Pacote',        x:M+151,  w:24},
+    {h:'Total Unidades',     x:M+175,  w:26},
+    {h:'Vlr Milheiro',       x:M+201,  w:30},
+    {h:'Valor a Receber',    x:M+231,  w:38},
+  ];
+
+  doc.setFillColor(26,26,46); doc.rect(M,y,W-M*2,8,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(246,201,14);
+  cols.forEach(c=>doc.text(c.h,c.x+2,y+5.5));
+  y+=10;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(26,26,46);
+  const itens=(r.itens||[]).filter(i=>(i.np||0)>0||(i.tu||0)>0);
+
+  itens.forEach((item,i)=>{
+    if (i%2===0){doc.setFillColor(249,250,252);doc.rect(M,y-1,W-M*2,8,'F');}
+    doc.setDrawColor(230,232,238); doc.line(M,y+7,W-M,y+7);
+    const trunc=(txt,maxW)=>{if(!txt)return'';let t=String(txt);while(t.length>0&&doc.getTextWidth(t)>maxW-4)t=t.slice(0,-1);return t;};
+    doc.text(trunc(item.desc,cols[0].w),cols[0].x+2,y+5);
+    doc.text(trunc(item.dsac,cols[1].w),cols[1].x+2,y+5);
+    doc.text(String(item.vias||''),cols[2].x+cols[2].w-2,y+5,{align:'right'});
+    doc.text((item.np||0).toLocaleString('pt-BR'),cols[3].x+cols[3].w-2,y+5,{align:'right'});
+    doc.text((item.qp||0).toLocaleString('pt-BR'),cols[4].x+cols[4].w-2,y+5,{align:'right'});
+    doc.text((item.tu||0).toLocaleString('pt-BR'),cols[5].x+cols[5].w-2,y+5,{align:'right'});
+    doc.text('R$ '+(item.mil||0).toFixed(2).replace('.',','),cols[6].x+cols[6].w-2,y+5,{align:'right'});
+    doc.setFont('helvetica','bold'); doc.setTextColor(15,110,86);
+    doc.text('R$ '+(item.v||0).toFixed(2).replace('.',','),cols[7].x+cols[7].w-2,y+5,{align:'right'});
+    doc.setFont('helvetica','normal'); doc.setTextColor(26,26,46);
+    y+=8;
+  });
+
+  // Rodapé
+  y+=3;
+  doc.setFillColor(26,26,46); doc.rect(M,y,W-M*2,11,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.setTextColor(160,165,180); doc.text('Qtde Total:',cols[4].x+cols[4].w-2,y+7,{align:'right'});
+  doc.setTextColor(255,255,255); doc.text((r.totalUnid||0).toLocaleString('pt-BR'),cols[5].x+cols[5].w-2,y+7,{align:'right'});
+  doc.setTextColor(160,165,180); doc.text('TOTAL:',cols[6].x+cols[6].w-2,y+7,{align:'right'});
+  doc.setTextColor(246,201,14); doc.setFontSize(10);
+  doc.text('R$ '+(r.totalVal||0).toFixed(2).replace('.',','),cols[7].x+cols[7].w-2,y+7,{align:'right'});
+
+  const arq=`Romaneio_${(r.nome||r.cli||'').replace(/\s+/g,'_')}_${(r.data||'').replace(/-/g,'')}.pdf`;
+  doc.save(arq);
+
+  let tel=r.tel||telsCache[r.cli]||'';
+  if (!tel) tel=prompt('WhatsApp do cliente (ex: 5511999999999):');
+  let wppUrl=null;
+  if (tel) {
+    tel=tel.replace(/\D/g,'');
+    if (!tel.startsWith('55')) tel='55'+tel;
+    const dtStr=r.data?r.data.split('-').reverse().join('/'):'';
+    const msg=encodeURIComponent(`Olá! Segue em anexo o romaneio de entrega — *${r.nome||r.cli}* (${dtStr}).\nTotal de unidades: *${(r.totalUnid||0).toLocaleString('pt-BR')}*\nTotal a receber: *R$ ${(r.totalVal||0).toFixed(2).replace('.',',')}*\n\nPIX: ${pixConfig.chave}\nAcabamentos - Macário`);
+    wppUrl=`https://wa.me/${tel}?text=${msg}`;
+  }
+  abrirModalExport(wppUrl);
+}
+
+function abrirModalExport(wppUrl) {
+  const btn=document.getElementById('btn-abrir-wpp');
+  if (wppUrl) { btn.style.display='inline-block'; btn.onclick=()=>{window.open(wppUrl,'_blank');fecharModalExport();}; }
+  else btn.style.display='none';
+  document.getElementById('modal-export').classList.remove('hidden');
+}
+function fecharModalExport() { document.getElementById('modal-export').classList.add('hidden'); }
+
+// ===== HISTÓRICO =====
+async function renderHist() {
+  const fc=document.getElementById('fil-cliente').value;
+  const fm=document.getElementById('fil-mes').value;
+  const card=document.getElementById('hist-card');
+  card.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+  let params='?order=data.desc,id.desc';
+  if (fc) params+=`&cliente=eq.${encodeURIComponent(fc)}`;
+  if (fm) { const [a,m]=fm.split('-'); const ul=new Date(+a,+m,0).getDate(); params+=`&data=gte.${fm}-01&data=lte.${fm}-${ul}`; }
+  try {
+    const lista=await sbGet('romaneios',params);
+    document.getElementById('res-rom').textContent=lista.length;
+    document.getElementById('res-unid').textContent=lista.reduce((s,r)=>s+(r.total_unid||0),0).toLocaleString('pt-BR');
+    document.getElementById('res-pac').textContent=lista.reduce((s,r)=>s+(r.total_pac||0),0).toLocaleString('pt-BR');
+    document.getElementById('res-val').textContent='R$ '+lista.reduce((s,r)=>s+(r.total_val||0),0).toFixed(2).replace('.',',');
+    if (!lista.length){card.innerHTML='<div class="empty-state"><div class="ico">📋</div><p>Nenhum romaneio encontrado.</p></div>';return;}
+    let html=`<table class="hist"><thead><tr><th>Data</th><th>Cliente</th><th>Retirado por</th><th style="text-align:right">Unidades</th><th style="text-align:right">Pacotes</th><th style="text-align:right">Total</th><th>Ações</th></tr></thead><tbody>`;
+    lista.forEach(r=>{
+      const dt=r.data?r.data.split('-').reverse().join('/'):'—';
+      html+=`<tr><td data-label="Data">${dt}</td><td data-label="Cliente"><span class="badge b-${r.cliente||'outro'}">${r.nome_cliente||r.cliente}</span></td><td data-label="Retirado por">${r.quem_retirou||'—'}</td><td data-label="Unidades" style="text-align:right;font-weight:600">${(r.total_unid||0).toLocaleString('pt-BR')}</td><td data-label="Pacotes" style="text-align:right">${(r.total_pac||0).toLocaleString('pt-BR')}</td><td data-label="Total" style="text-align:right;font-weight:800;color:#276749">R$ ${(r.total_val||0).toFixed(2).replace('.',',')}</td><td><div class="action-btns"><button class="bsm bsm-pdf" onclick="reexportarRom(${r.id})">📄 PDF+WPP</button><button class="bsm bsm-del" onclick="delRom(${r.id})">🗑</button></div></td></tr>`;
+    });
+    html+='</tbody></table>';
+    card.innerHTML=html;
+  } catch(e){card.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>Erro: ${e.message}</p></div>`;}
+}
+
+async function reexportarRom(id) {
+  if (!pixConfig.chave){alerta('Configure o PIX!','error');abrirModalPix();return;}
+  const [rom]=await sbGet('romaneios',`?id=eq.${id}`);
+  const itensRaw=await sbGet('romaneio_itens',`?romaneio_id=eq.${id}&order=id.asc`);
+  const itens=itensRaw.map(i=>({desc:i.descricao_modelo,dsac:i.descricao_sacola,vias:i.vias,np:i.qtd_pacotes,qp:i.qtd_por_pacote,tu:i.total_unid,mil:i.valor_milheiro,v:i.valor_receber}));
+  gerarEAbrirPDF({cli:rom.cliente,nome:rom.nome_cliente,data:rom.data,quem:rom.quem_retirou,tel:rom.tel_cliente,itens,totalUnid:rom.total_unid,totalPac:rom.total_pac,totalVal:rom.total_val});
+}
+
+async function delRom(id) {
+  if (!confirm('Excluir este romaneio?'))return;
+  await sbDelete('romaneios',id);
+  alerta('Romaneio excluído.','success'); renderHist();
+}
+
+// ===== RECEBIMENTOS =====
+async function renderRecebimentos() {
+  const fc=document.getElementById('rec-fil-cliente').value;
+  const fm=document.getElementById('rec-fil-mes').value;
+  const card=document.getElementById('rec-card');
+  card.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+  let params='?order=data_romaneio.desc,id.desc';
+  if (fc) params+=`&cliente=eq.${encodeURIComponent(fc)}`;
+  if (fm) { const [a,m]=fm.split('-'); const ul=new Date(+a,+m,0).getDate(); params+=`&data_romaneio=gte.${fm}-01&data_romaneio=lte.${fm}-${ul}`; }
+  try {
+    const lista=await sbGet('recebimentos',params);
+    const pendentes=lista.filter(r=>!r.recebido);
+    const recebidos=lista.filter(r=>r.recebido);
+    const valPend=pendentes.reduce((s,r)=>s+(r.valor_total||0),0);
+    const valRec=recebidos.reduce((s,r)=>s+(r.valor_total||0),0);
+    const valTotal=lista.reduce((s,r)=>s+(r.valor_total||0),0);
+    document.getElementById('rec-pendente').textContent='R$ '+valPend.toFixed(2).replace('.',',');
+    document.getElementById('rec-pendente-qtd').textContent=pendentes.length+' romaneio'+(pendentes.length!==1?'s':'');
+    document.getElementById('rec-recebido').textContent='R$ '+valRec.toFixed(2).replace('.',',');
+    document.getElementById('rec-recebido-qtd').textContent=recebidos.length+' romaneio'+(recebidos.length!==1?'s':'');
+    document.getElementById('rec-total').textContent='R$ '+valTotal.toFixed(2).replace('.',',');
+    document.getElementById('rec-total-qtd').textContent=lista.length+' romaneio'+(lista.length!==1?'s':'');
+    if (!lista.length){card.innerHTML='<div class="empty-state"><div class="ico">💰</div><p>Nenhum registro encontrado.</p></div>';return;}
+    let html=`<table class="rec"><thead><tr><th>Data</th><th>Cliente</th><th>Retirado por</th><th style="text-align:right">Total</th><th style="text-align:center">Status</th><th style="text-align:center">Marcar Recebido</th></tr></thead><tbody>`;
+    lista.forEach(r=>{
+      const dt=r.data_romaneio?r.data_romaneio.split('-').reverse().join('/'):'—';
+      const statusBadge=r.recebido?'<span class="badge badge-recebido">✅ Recebido</span>':'<span class="badge badge-pendente">⏳ Pendente</span>';
+      const dtRec=r.data_recebimento?r.data_recebimento.split('-').reverse().join('/'):'';
+      const subRec=r.recebido&&dtRec?`<br><small style="color:#718096;font-size:10px">em ${dtRec}</small>`:'';
+      html+=`<tr style="${r.recebido?'opacity:0.65':''}">
+        <td data-label="Data">${dt}</td>
+        <td data-label="Cliente"><span class="badge b-${r.cliente||'outro'}">${r.nome_cliente||r.cliente}</span></td>
+        <td data-label="Retirado por">—</td>
+        <td data-label="Total" style="text-align:right;font-weight:800;color:${r.recebido?'#276749':'#92400e'}">R$ ${(r.valor_total||0).toFixed(2).replace('.',',')}${subRec}</td>
+        <td data-label="Status" style="text-align:center">${statusBadge}</td>
+        <td data-label="Ação" style="text-align:center">
+          <label class="toggle-recebido">
+            <input type="checkbox" ${r.recebido?'checked':''} onchange="toggleRecebido(${r.id},this.checked)">
+            <span style="color:${r.recebido?'#276749':'#718096'}">${r.recebido?'Recebido':'Marcar'}</span>
+          </label>
+        </td>
+      </tr>`;
+    });
+    html+='</tbody></table>';
+    card.innerHTML=html;
+  } catch(e){card.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>Erro: ${e.message}</p></div>`;}
+}
+
+async function toggleRecebido(id, recebido) {
+  try {
+    await sbPatch('recebimentos', id, {
+      recebido,
+      data_recebimento: recebido ? new Date().toISOString().split('T')[0] : null,
+      valor_recebido: recebido ? undefined : 0
+    });
+    renderRecebimentos();
+  } catch(e) { alerta('Erro ao atualizar: '+e.message,'error'); }
+}
+
+
+// ===== NOTIFICAÇÕES REALTIME (só para Renato) =====
+const NOTIF_USER = 'renato';
+let realtimeChannel = null;
+let autoRefreshInterval = null;
+let notifCount = 0;
+
+function isRenato() {
+  return usuarioLogado && usuarioLogado.username === NOTIF_USER;
+}
+
+function mostrarNotif(icon, title, msg) {
+  if (!isRenato()) return;
+  notifCount++;
+  const container = document.getElementById('notif-container');
+  const id = 'notif-' + Date.now();
+  const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'notif';
+  div.id = id;
+  div.innerHTML = `
+    <span class="notif-icon">${icon}</span>
+    <div class="notif-body">
+      <div class="notif-title">${title}</div>
+      <div class="notif-msg">${msg}</div>
+      <div class="notif-time">${agora}</div>
+    </div>
+    <button class="notif-close" onclick="fecharNotif('${id}')">×</button>
+  `;
+  container.appendChild(div);
+  // Auto-remove em 8s
+  setTimeout(() => fecharNotif(id), 8000);
+  // Notificação do browser
+  if (Notification.permission === 'granted') {
+    new Notification('Acabamentos - Macário', { body: msg, icon: '/favicon.ico' });
+  }
+}
+
+function fecharNotif(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('removing');
+  setTimeout(() => el.remove(), 300);
+}
+
+function pedirPermissaoNotif() {
+  if (!isRenato()) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function iniciarRealtime() {
+  if (!isRenato()) return;
+  pedirPermissaoNotif();
+
+  // Supabase Realtime via WebSocket
+  const wsUrl = `wss://nmefykzybphcmktuhccf.supabase.co/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
+  let ws;
+
+  function conectarWS() {
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        // Join channel de romaneios
+        ws.send(JSON.stringify({
+          topic: 'realtime:public:romaneios',
+          event: 'phx_join',
+          payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: 'public', table: 'romaneios' }] } },
+          ref: '1'
+        }));
+        // Join channel de recebimentos
+        ws.send(JSON.stringify({
+          topic: 'realtime:public:recebimentos',
+          event: 'phx_join',
+          payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: 'public', table: 'recebimentos' }] } },
+          ref: '2'
+        }));
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.event === 'postgres_changes') {
+            const payload = data.payload;
+            const record = payload.record || payload.new || {};
+            const tipo = payload.type || '';
+            const tabela = payload.table || '';
+
+            if (tabela === 'romaneios' && tipo === 'INSERT') {
+              const cli = record.nome_cliente || record.cliente || '—';
+              const val = record.total_val ? 'R$ ' + parseFloat(record.total_val).toFixed(2).replace('.',',') : '';
+              const dt = record.data ? record.data.split('-').reverse().join('/') : '';
+              mostrarNotif('📋', 'Novo Romaneio', `Wetcha cadastrou: ${cli} — ${dt}\n${val}`);
+              // Atualiza histórico se estiver na aba
+              if (document.getElementById('tab-historico').classList.contains('active')) renderHist();
+              if (document.getElementById('tab-recebimentos').classList.contains('active')) renderRecebimentos();
+            }
+
+            if (tabela === 'recebimentos' && tipo === 'UPDATE') {
+              const recebido = record.recebido;
+              const cli = record.nome_cliente || record.cliente || '—';
+              const val = record.valor_total ? 'R$ ' + parseFloat(record.valor_total).toFixed(2).replace('.',',') : '';
+              if (recebido) {
+                mostrarNotif('✅', 'Pagamento Marcado', `${cli} marcado como recebido — ${val}`);
+              } else {
+                mostrarNotif('⏳', 'Pagamento Desmarcado', `${cli} voltou para pendente — ${val}`);
+              }
+              if (document.getElementById('tab-recebimentos').classList.contains('active')) renderRecebimentos();
+            }
+          }
+          // Heartbeat
+          if (data.event === 'heartbeat') {
+            ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
+          }
+        } catch(err) {}
+      };
+
+      ws.onclose = () => {
+        // Reconecta em 5s se cair
+        setTimeout(conectarWS, 5000);
+      };
+
+    } catch(err) {}
+  }
+
+  conectarWS();
+}
+
+// Auto-refresh a cada 30s nas abas de histórico e recebimentos
+function iniciarAutoRefresh() {
+  autoRefreshInterval = setInterval(() => {
+    if (document.getElementById('tab-historico').classList.contains('active')) renderHist();
+    if (document.getElementById('tab-recebimentos').classList.contains('active')) renderRecebimentos();
+  }, 30000);
+}
+
+// ===== UTILS =====
+function setBtnLoading(id,loading) {
+  const btn=document.getElementById(id); if(!btn)return;
+  btn.disabled=loading;
+  if (loading) btn.innerHTML='<span class="spinner"></span> Aguarde...';
+  else {
+    if (id==='btn-salvar') btn.innerHTML='💾 Salvar';
+    if (id==='btn-exportar') btn.innerHTML='📲 Exportar PDF + WhatsApp';
+  }
+}
+
+function alerta(msg,tipo) {
+  const b=document.getElementById('alert-box');
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  b.className='alert alert-'+tipo;
+  b.innerHTML=`${icons[tipo]||''} ${msg}`;
+  b.style.display='flex';
+  setTimeout(()=>b.style.display='none',4000);
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+</script>
+</body>
+</html>

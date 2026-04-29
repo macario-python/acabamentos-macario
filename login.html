@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acabamentos - Macário | Login</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+.login-wrap { width: 100%; max-width: 400px; padding: 24px; }
+
+.logo { text-align: center; margin-bottom: 32px; }
+.logo h1 { font-size: 26px; font-weight: 900; color: #1a1a2e; letter-spacing: 1px; }
+.logo h1 span { color: #f6c90e; }
+.logo p { font-size: 12px; color: #718096; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+.card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid #e8ecf0; }
+.card h2 { font-size: 18px; font-weight: 800; color: #1a1a2e; margin-bottom: 6px; }
+.card p { font-size: 13px; color: #718096; margin-bottom: 24px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #718096; }
+.field input { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 11px 14px; font-size: 14px; color: #1a1a2e; outline: none; font-family: inherit; transition: border-color 0.2s; }
+.field input:focus { border-color: #f6c90e; box-shadow: 0 0 0 3px rgba(246,201,14,0.12); }
+
+.btn-login { width: 100%; background: #1a1a2e; color: #f6c90e; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 800; cursor: pointer; transition: all 0.2s; font-family: inherit; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-login:hover { background: #2d3748; }
+.btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.alert-error { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none; }
+.alert-error.show { display: block; }
+
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(246,201,14,0.3); border-top-color: #f6c90e; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer { text-align: center; margin-top: 20px; font-size: 11px; color: #a0aec0; }
+</style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Acabamentos">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="theme-color" content="#1a1a2e">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo">
+    <h1>ACABAMENTOS <span>MACÁRIO</span></h1>
+    <p>Romaneio de Entrega</p>
+  </div>
+
+  <div class="card">
+    <h2>Entrar no sistema</h2>
+    <p>Digite seu usuário e senha para continuar.</p>
+
+    <div id="alert-error" class="alert-error">Usuário ou senha incorretos.</div>
+
+    <div class="field">
+      <label>Usuário</label>
+      <input type="text" id="inp-user" placeholder="seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter') login()">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="inp-senha" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()">
+    </div>
+
+    <button class="btn-login" id="btn-login" onclick="login()">Entrar</button>
+  </div>
+
+  <div class="footer">Acabamentos - Macário © 2026</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://nmefykzybphcmktuhccf.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tZWZ5a3p5YnBoY21rdHVoY2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MjA5NzEsImV4cCI6MjA5Mjk5Njk3MX0.R-kwegAfj089c2zmgTzQyfkpgbcsWfmcmu_KZT9hJpA';
+
+// Se já logado, redireciona
+if (sessionStorage.getItem('usuario_acab')) {
+  window.location.href = 'index.html';
+}
+
+async function login() {
+  const user = document.getElementById('inp-user').value.trim().toLowerCase();
+  const senha = document.getElementById('inp-senha').value;
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('alert-error');
+
+  if (!user || !senha) { err.textContent = 'Preencha usuário e senha.'; err.classList.add('show'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Verificando...';
+  err.classList.remove('show');
+
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/usuarios_acabamentos?username=eq.${encodeURIComponent(user)}&senha=eq.${encodeURIComponent(senha)}`, {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    const data = await res.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      sessionStorage.setItem('usuario_acab', JSON.stringify({ username: data[0].username, nome: data[0].nome }));
+      window.location.href = 'index.html';
+    } else {
+      err.textContent = 'Usuário ou senha incorretos.';
+      err.classList.add('show');
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar';
+    }
+  } catch(e) {
+    err.textContent = 'Erro de conexão. Tente novamente.';
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.innerHTML = 'Entrar';
+  }
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+</script>
+</body>
+</html>
