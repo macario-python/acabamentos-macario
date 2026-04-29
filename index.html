@@ -238,8 +238,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <select id="sel-cliente" onchange="onClienteChange()">
           <option value="">Selecione...</option>
           <option>Gráfica Cristina</option><option>Alcalima</option>
-          <option>Ypê / IPE</option><option>Mix</option>
-          <option>Sr. Luiz</option><option>Favorita</option><option>Sorria</option>
+          <option>IPE</option><option>Mix</option>
+          <option>Favorita</option><option>Sorria</option>
         </select></div>
       <div class="field"><label>Data <span class="req">*</span></label><input type="date" id="inp-data"></div>
       <div class="field"><label>Quem Retirou</label><input type="text" id="inp-quem" placeholder="Nome da pessoa"></div>
@@ -286,9 +286,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
       <div class="field"><label>Fornecedor <span class="req">*</span></label>
         <select id="ent-fornecedor">
           <option value="">Selecione...</option>
-          <option>Sr. Luiz</option><option>Ypê / IPE</option><option>Mix</option>
+          <option>Gráfica Cristina</option><option>IPE</option><option>Mix</option>
           <option>Alcalima</option><option>Favorita</option><option>Sorria</option>
-          <option>Gráfica Cristina</option>
         </select></div>
       <div class="field"><label>Data Entrada <span class="req">*</span></label><input type="date" id="ent-data"></div>
       <div class="field"><label>Modelo <span class="req">*</span></label><input type="text" id="ent-modelo" placeholder="Ex: Sacola 1 via"></div>
@@ -309,8 +308,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
       <div class="field"><label>Fornecedor</label>
         <select id="ent-fil-forn">
           <option value="">Todos</option>
-          <option>Sr. Luiz</option><option>Ypê / IPE</option><option>Mix</option>
-          <option>Alcalima</option><option>Favorita</option><option>Sorria</option><option>Gráfica Cristina</option>
+          <option>Gráfica Cristina</option><option>IPE</option><option>Mix</option>
+          <option>Alcalima</option><option>Favorita</option><option>Sorria</option>
         </select></div>
       <div class="field"><label>Mês</label><input type="month" id="ent-fil-mes"></div>
       <button class="btn-filter" onclick="renderEntradas()">Filtrar</button>
@@ -451,7 +450,7 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <select id="hist-cliente">
           <option value="">Todos</option>
           <option>Gráfica Cristina</option><option>Alcalima</option>
-          <option>Ypê / IPE</option><option>Mix</option><option>Sr. Luiz</option>
+          <option>IPE</option><option>Mix</option>
           <option>Favorita</option><option>Sorria</option>
         </select></div>
       <div class="field"><label>Mês</label><input type="month" id="hist-mes"></div>
@@ -535,7 +534,7 @@ function logout(){sessionStorage.removeItem('usuario_acab');window.location.href
 const DB_CLIENTES={
   'Gráfica Cristina':{modelos:[{desc:'Sacola Grande 2 vias',vias:2,mil:210},{desc:'Sacola Média 2 vias',vias:2,mil:190},{desc:'Sacola Pequena 1 via',vias:1,mil:170}]},
   'Alcalima':{modelos:[{desc:'Saco 1 via',vias:1,mil:160},{desc:'Saco 2 vias',vias:2,mil:180},{desc:'Saco 1 via + Alça',vias:1,mil:200},{desc:'Saco 2 vias + Alça',vias:2,mil:220}]},
-  'Ypê / IPE':{modelos:[{desc:'Garrafa',vias:1,mil:180},{desc:'Porta Talher',vias:1,mil:40}]},
+  'IPE':{modelos:[{desc:'Garrafa',vias:1,mil:180},{desc:'Porta Talher',vias:1,mil:40}]},
   'Mix':{modelos:[{desc:'Sacola Média com Ilhós + Alça',vias:2,mil:230}]}
 };
 
