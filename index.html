@@ -815,7 +815,12 @@ function gerarPDF(r){
   doc.setTextColor(160,165,180);doc.text('TOTAL:',cols[6].x+cols[6].w-2,y+7,{align:'right'});
   doc.setTextColor(246,201,14);doc.setFontSize(10);doc.text('R$ '+(r.totalVal||0).toFixed(2).replace('.',','),cols[7].x+cols[7].w-2,y+7,{align:'right'});
   const arq=`Romaneio_${(r.nome||r.cli||'').replace(/\s+/g,'_')}_${(r.data||'').replace(/-/g,'')}.pdf`;
-  doc.save(arq);
+  // Abre em nova aba para visualizar e compartilhar
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  const novaAba = window.open(pdfUrl, '_blank');
+  // Fallback: se popup bloqueado, faz download direto
+  if (!novaAba) { doc.save(arq); }
   let tel=r.tel||telsCache[r.cli]||'';
   if(!tel)tel=prompt('WhatsApp do cliente (ex: 5511999999999):');
   let wppUrl=null;
