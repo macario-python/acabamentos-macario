@@ -519,39 +519,97 @@ table.tbl tbody tr:hover{background:#fafbfc}
 
 <!-- ========== CONFERÊNCIA ========== -->
 <div id="tab-conferencia" class="section">
+
+  <!-- Painel resumo rápido -->
+  <div class="painel" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+    <div class="p-box"><label>⏳ Aguardando Devolução</label><div class="val" id="conf-res-pend">—</div><div class="sub">distribuições na rua</div></div>
+    <div class="p-box"><label>🔍 Aguardando Conferência</label><div class="val" id="conf-res-conferir">—</div><div class="sub">devoluções a conferir</div></div>
+    <div class="p-box dark"><label>✅ Prontas p/ Entrega</label><div class="val" id="conf-res-prontas">—</div><div class="sub">unidades aprovadas</div></div>
+  </div>
+
+  <!-- Registrar devolução -->
   <div class="card">
-    <div class="card-title">Registrar Devolução</div>
+    <div class="card-title">📦 Registrar Devolução do Colaborador</div>
+
     <div class="g4">
-      <div class="field"><label>Distribuição <span class="req">*</span></label>
-        <select id="conf-dist"><option value="">Selecione...</option></select></div>
-      <div class="field"><label>Data Devolução <span class="req">*</span></label><input type="date" id="conf-data"></div>
-      <div class="field"><label>Qtde Devolvida <span class="req">*</span></label>
-        <input type="number" id="conf-qtde-dev" placeholder="0" min="0" oninput="calcConf()"></div>
-      <div class="field"><label>Qtde Perda</label>
-        <input type="number" id="conf-qtde-perda" placeholder="0" min="0" value="0" oninput="calcConf()"></div>
+      <div class="field">
+        <label>Distribuição <span class="req">*</span></label>
+        <select id="conf-dist" onchange="onConfDistChange()">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data Devolução <span class="req">*</span></label>
+        <input type="date" id="conf-data">
+      </div>
+      <div class="field">
+        <label>Qtde Devolvida <span class="req">*</span></label>
+        <input type="number" id="conf-qtde-dev" placeholder="0" min="0" oninput="calcConf()">
+        <span id="conf-saldo-info" style="font-size:10px;color:#718096;margin-top:2px"></span>
+      </div>
+      <div class="field">
+        <label>É entrega parcial?</label>
+        <select id="conf-parcial">
+          <option value="0">Não — entrega total</option>
+          <option value="1">Sim — ainda tem mais a entregar</option>
+        </select>
+      </div>
     </div>
-    <div class="g3" style="margin-top:12px">
-      <div class="field"><label>Motivo Perda</label>
-        <select id="conf-motivo">
-          <option value="">Sem perda</option>
-          <option>Rasgada</option><option>Colada uma na outra</option>
-          <option>Manchada</option><option>Dobrada errado</option><option>Outro</option>
-        </select></div>
-      <div class="field"><label>Valor a Pagar (calculado)</label>
-        <div class="fc" id="conf-valor">R$ 0,00</div></div>
-      <div class="field"><label>Conferido / OK?</label>
-        <select id="conf-ok">
-          <option value="0">Aguardando conferência</option>
-          <option value="1">✅ Conferido e aprovado</option>
-        </select></div>
+
+    <!-- Conferência de qualidade -->
+    <div style="margin-top:14px;background:#f7fafc;border-radius:10px;padding:14px;border:1px solid #e2e8f0">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#718096;margin-bottom:12px">🔍 Conferência de Qualidade</div>
+      <div class="g4">
+        <div class="field">
+          <label>Qtde Aprovada <span class="req">*</span></label>
+          <input type="number" id="conf-qtde-aprov" placeholder="0" min="0" oninput="calcConf()">
+        </div>
+        <div class="field">
+          <label>Qtde Perda</label>
+          <input type="number" id="conf-qtde-perda" placeholder="0" min="0" value="0" oninput="calcConf()">
+        </div>
+        <div class="field">
+          <label>Motivo da Perda</label>
+          <select id="conf-motivo">
+            <option value="">Sem perda</option>
+            <option>Rasgada</option>
+            <option>Colada uma na outra</option>
+            <option>Manchada</option>
+            <option>Dobrada errado</option>
+            <option>Deformada</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Valor a Pagar (calculado)</label>
+          <div class="fc" id="conf-valor">R$ 0,00</div>
+        </div>
+      </div>
     </div>
+
+    <!-- Info da distribuição selecionada -->
+    <div id="conf-dist-info" style="display:none;margin-top:12px;background:#ebf8ff;border:1.5px solid #90cdf4;border-radius:10px;padding:12px 14px;font-size:12px">
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-save" onclick="salvarDevolucao()">💾 Registrar Devolução</button>
     </div>
   </div>
+
+  <!-- Lista devoluções aguardando conferência -->
   <div class="card">
-    <div class="card-title">Devoluções Pendentes de Conferência</div>
-    <div id="conf-lista"><div class="empty-state"><div class="ico">✅</div><p>Nenhuma devolução pendente.</p></div></div>
+    <div class="card-title">🔍 Devoluções Aguardando Conferência</div>
+    <div id="conf-lista-pendente"><div class="empty-state"><div class="ico">✅</div><p>Nenhuma devolução pendente.</p></div></div>
+  </div>
+
+  <!-- Lista todas as devoluções -->
+  <div class="card">
+    <div class="card-title">📋 Histórico de Devoluções</div>
+    <div class="filters">
+      <div class="field"><label>Mês</label><input type="month" id="conf-fil-mes"></div>
+      <button class="btn-filter" onclick="renderConferencias()">Filtrar</button>
+    </div>
+    <div id="conf-lista"><div class="empty-state"><div class="ico">📋</div><p>Nenhuma devolução encontrada.</p></div></div>
   </div>
 </div>
 
@@ -759,7 +817,7 @@ function showTab(t,el){
   el.classList.add('active');
   if(t==='entrada')renderEntradas();
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
-  if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();}
+  if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
   if(t==='financeiro')renderFinanceiro();
   if(t==='historico')renderHistorico();
 }
@@ -1393,104 +1451,259 @@ async function renderDistribuicoes() {
 }
 
 // ===== CONFERÊNCIA =====
-async function carregarDistribuicoesSelect(){
-  try{
-    const lista=await sbGet('distribuicoes','?status=in.(pendente,devolvido)&order=data_saida.desc');
-    const sel=document.getElementById('conf-dist');
-    sel.innerHTML='<option value="">Selecione...</option>';
-    lista.forEach(d=>{
-      const o=document.createElement('option');o.value=d.id;
-      const dt=d.data_saida?d.data_saida.split('-').reverse().join('/'):'';
-      o.textContent=`${dt} — ${d.colaborador_nome} — ${d.servico} (${(d.qtde_enviada||0).toLocaleString('pt-BR')} un)`;
-      o.dataset.vlr=d.valor_milheiro_pagar;o.dataset.qtde=d.qtde_enviada;
+let confDistAtual = null;
+
+async function carregarDistribuicoesSelect() {
+  try {
+    const lista = await sbGet('distribuicoes', '?status=in.(pendente,parcial)&order=data_saida.desc');
+    const sel = document.getElementById('conf-dist');
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    lista.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.id;
+      const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '';
+      const pendente = (d.qtde_enviada||0) - (d.qtde_retornada||0);
+      o.textContent = `${dt} — ${d.colaborador_nome} — ${d.servico} | Enviado: ${(d.qtde_enviada||0).toLocaleString('pt-BR')} | Pendente: ${pendente.toLocaleString('pt-BR')}`;
+      o.dataset.distObj = JSON.stringify(d);
       sel.appendChild(o);
     });
-  }catch(e){}
+  } catch(e) {}
 }
 
-function calcConf(){
-  const sel=document.getElementById('conf-dist');
-  const opt=sel.options[sel.selectedIndex];
-  const vlr=parseFloat(opt?.dataset?.vlr||0);
-  const dev=parseInt(document.getElementById('conf-qtde-dev').value)||0;
-  const perda=parseInt(document.getElementById('conf-qtde-perda').value)||0;
-  const aprovado=dev-perda;
-  const valor=(vlr/1000)*Math.max(0,aprovado);
-  document.getElementById('conf-valor').textContent='R$ '+valor.toFixed(2).replace('.',',');
+function onConfDistChange() {
+  const sel = document.getElementById('conf-dist');
+  const opt = sel.options[sel.selectedIndex];
+  const infoEl = document.getElementById('conf-dist-info');
+
+  if (!opt || !opt.dataset.distObj) {
+    confDistAtual = null;
+    infoEl.style.display = 'none';
+    document.getElementById('conf-saldo-info').textContent = '';
+    return;
+  }
+
+  confDistAtual = JSON.parse(opt.dataset.distObj);
+  const enviado  = confDistAtual.qtde_enviada || 0;
+  const retorn   = confDistAtual.qtde_retornada || 0;
+  const pendente = enviado - retorn;
+
+  document.getElementById('conf-saldo-info').textContent = `Pendente de retorno: ${pendente.toLocaleString('pt-BR')} un`;
+
+  // Preenche qtde aprovada igual à devolvida por padrão
+  document.getElementById('conf-qtde-dev').value = '';
+  document.getElementById('conf-qtde-aprov').value = '';
+  document.getElementById('conf-qtde-perda').value = '0';
+
+  infoEl.style.display = 'block';
+  const tipo = confDistAtual.tipo === 'interno' ? '🏭 Interno' : '👥 Rua';
+  infoEl.innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <div><span style="color:#4a5568">Colaborador:</span> <strong>${confDistAtual.colaborador_nome}</strong></div>
+      <div><span style="color:#4a5568">Tipo:</span> <strong>${tipo}</strong></div>
+      <div><span style="color:#4a5568">Serviço:</span> <strong>${confDistAtual.servico}</strong></div>
+      <div><span style="color:#4a5568">Enviado:</span> <strong>${enviado.toLocaleString('pt-BR')}</strong></div>
+      <div><span style="color:#4a5568">Já retornou:</span> <strong style="color:#276749">${retorn.toLocaleString('pt-BR')}</strong></div>
+      <div><span style="color:#4a5568">Pendente:</span> <strong style="color:#e53e3e">${pendente.toLocaleString('pt-BR')}</strong></div>
+      <div><span style="color:#4a5568">Vlr/Mil:</span> <strong>R$ ${(confDistAtual.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</strong></div>
+    </div>`;
+  calcConf();
 }
 
-async function salvarDevolucao(){
-  const distId=document.getElementById('conf-dist').value;
-  const data=document.getElementById('conf-data').value;
-  const dev=parseInt(document.getElementById('conf-qtde-dev').value)||0;
-  const perda=parseInt(document.getElementById('conf-qtde-perda').value)||0;
-  const motivo=document.getElementById('conf-motivo').value;
-  const ok=document.getElementById('conf-ok').value==='1';
-  if(!distId||!data||!dev){alerta('Preencha os campos obrigatórios!','error');return}
-  const sel=document.getElementById('conf-dist');
-  const opt=sel.options[sel.selectedIndex];
-  const vlr=parseFloat(opt?.dataset?.vlr||0);
-  const aprovado=dev-perda;
-  const valor=(vlr/1000)*Math.max(0,aprovado);
-  try{
-    await sbPost('devolucoes',{distribuicao_id:parseInt(distId),data_devolucao:data,qtde_devolvida:dev,qtde_perda:perda,motivo_perda:motivo,conferido:ok,data_conferencia:ok?data:null,valor_a_pagar:valor});
-    if(ok||dev>0){await sbPatch('distribuicoes',distId,{status:ok?'conferido':'devolvido'})}
-    alerta('Devolução registrada!','success');
-    document.getElementById('conf-dist').value='';document.getElementById('conf-qtde-dev').value='';
-    document.getElementById('conf-qtde-perda').value='0';document.getElementById('conf-motivo').value='';
-    document.getElementById('conf-ok').value='0';document.getElementById('conf-valor').textContent='R$ 0,00';
+function calcConf() {
+  const dev   = parseInt(document.getElementById('conf-qtde-dev').value) || 0;
+  const aprov = parseInt(document.getElementById('conf-qtde-aprov').value) || 0;
+  const perda = parseInt(document.getElementById('conf-qtde-perda').value) || 0;
+  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+
+  // Auto-calcula perda se aprov foi preenchido
+  if (dev > 0 && aprov >= 0) {
+    const perdaCalc = Math.max(0, dev - aprov);
+    if (document.getElementById('conf-qtde-perda').value == '0' || document.getElementById('conf-qtde-aprov').value) {
+      document.getElementById('conf-qtde-perda').value = perdaCalc;
+    }
+  }
+
+  const aprovFinal = Math.max(0, aprov || (dev - perda));
+  const valor = (vlr / 1000) * aprovFinal;
+  document.getElementById('conf-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
+
+  // Alerta se devolvido > enviado
+  if (confDistAtual) {
+    const pendente = (confDistAtual.qtde_enviada||0) - (confDistAtual.qtde_retornada||0);
+    const info = document.getElementById('conf-saldo-info');
+    if (dev > pendente) {
+      info.textContent = `⚠ Qtde excede o pendente! (${pendente.toLocaleString('pt-BR')} un pendentes)`;
+      info.style.color = '#e53e3e';
+    } else {
+      info.textContent = `Pendente de retorno: ${pendente.toLocaleString('pt-BR')} un`;
+      info.style.color = '#718096';
+    }
+  }
+}
+
+async function salvarDevolucao() {
+  const distId  = document.getElementById('conf-dist').value;
+  const data    = document.getElementById('conf-data').value;
+  const dev     = parseInt(document.getElementById('conf-qtde-dev').value) || 0;
+  const aprov   = parseInt(document.getElementById('conf-qtde-aprov').value) || 0;
+  const perda   = parseInt(document.getElementById('conf-qtde-perda').value) || 0;
+  const motivo  = document.getElementById('conf-motivo').value;
+  const parcial = document.getElementById('conf-parcial').value === '1';
+
+  if (!distId) { alerta('Selecione a distribuição!', 'error'); return; }
+  if (!data)   { alerta('Informe a data!', 'error'); return; }
+  if (!dev)    { alerta('Informe a quantidade devolvida!', 'error'); return; }
+  if (aprov < 0) { alerta('Qtde aprovada inválida!', 'error'); return; }
+  if (aprov + perda !== dev) { alerta(`Atenção: Aprovadas (${aprov}) + Perdas (${perda}) ≠ Devolvidas (${dev})!`, 'error'); return; }
+
+  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+  const valor = (vlr / 1000) * aprov;
+
+  try {
+    // Salva devolução
+    await sbPost('devolucoes', {
+      distribuicao_id: parseInt(distId),
+      entrada_id: confDistAtual?.entrada_id,
+      data_devolucao: data,
+      qtde_devolvida: dev, qtde_aprovada: aprov, qtde_perda: perda,
+      motivo_perda: motivo, conferido: true,
+      data_conferencia: data, valor_a_pagar: valor
+    });
+
+    // Atualiza distribuição
+    const novoRetornado = (confDistAtual?.qtde_retornada || 0) + dev;
+    const novoAprovado  = (confDistAtual?.qtde_aprovada  || 0) + aprov;
+    const novoPerda     = (confDistAtual?.qtde_perda     || 0) + perda;
+    const totalEnviado  = confDistAtual?.qtde_enviada || 0;
+    const novoStatus    = parcial ? 'parcial' : (novoRetornado >= totalEnviado ? 'concluido' : 'parcial');
+
+    await sbPatch('distribuicoes', distId, {
+      qtde_retornada: novoRetornado,
+      qtde_aprovada:  novoAprovado,
+      qtde_perda:     novoPerda,
+      status:         novoStatus
+    });
+
+    // Atualiza qtde_feita na entrada
+    if (confDistAtual?.entrada_id) {
+      const [entrada] = await sbGet('entradas', `?id=eq.${confDistAtual.entrada_id}`);
+      if (entrada) {
+        await sbPatch('entradas', confDistAtual.entrada_id, {
+          qtde_feita: (entrada.qtde_feita || 0) + aprov
+        });
+      }
+    }
+
+    alerta(`✅ Devolução registrada! ${aprov.toLocaleString('pt-BR')} aprovadas${perda > 0 ? ` | ${perda} perdas` : ''}`, 'success');
+
+    // Limpa
+    document.getElementById('conf-dist').value = '';
+    document.getElementById('conf-qtde-dev').value = '';
+    document.getElementById('conf-qtde-aprov').value = '';
+    document.getElementById('conf-qtde-perda').value = '0';
+    document.getElementById('conf-motivo').value = '';
+    document.getElementById('conf-parcial').value = '0';
+    document.getElementById('conf-valor').textContent = 'R$ 0,00';
+    document.getElementById('conf-dist-info').style.display = 'none';
+    document.getElementById('conf-saldo-info').textContent = '';
+    confDistAtual = null;
+
     renderConferencias();
-  }catch(e){alerta('Erro: '+e.message,'error')}
+    renderConfPainel();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
-async function renderConferencias(){
-  const el=document.getElementById('conf-lista');
-  try{
-    const lista=await sbGet('devolucoes','?conferido=eq.false&order=created_at.desc');
-    if(!lista.length){el.innerHTML='<div class="empty-state"><div class="ico">✅</div><p>Nenhuma devolução pendente de conferência.</p></div>';return}
-    let html=`<table class="tbl"><thead><tr><th>Data Dev.</th><th>Colaborador</th><th style="text-align:right">Dev.</th><th style="text-align:right">Perda</th><th>Motivo</th><th style="text-align:right">Vlr Pagar</th><th>Ações</th></tr></thead><tbody>`;
-    for(const d of lista){
-      const dist=await sbGet('distribuicoes',`?id=eq.${d.distribuicao_id}`);
-      const distObj=dist[0]||{};
-      const dt=d.data_devolucao?d.data_devolucao.split('-').reverse().join('/'):'—';
-      html+=`<tr>
-        <td data-label="Data">${dt}</td>
-        <td data-label="Colaborador">${distObj.colaborador_nome||'—'}</td>
-        <td data-label="Devolvido" style="text-align:right">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
-        <td data-label="Perda" style="text-align:right;color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
-        <td data-label="Motivo" style="font-size:11px">${d.motivo_perda||'—'}</td>
-        <td data-label="Vlr Pagar" style="text-align:right;font-weight:700;color:#276749">R$ ${(d.valor_a_pagar||0).toFixed(2).replace('.',',')}</td>
-        <td><button class="btn-mgreen" onclick="darOkConferencia(${d.id},${distObj.id||0},${distObj.valor_milheiro_pagar||0})" style="padding:4px 10px;font-size:11px;border-radius:6px;cursor:pointer">✅ OK</button></td>
+async function renderConfPainel() {
+  try {
+    const pend    = await sbGet('distribuicoes', '?status=in.(pendente,parcial)');
+    const aConf   = await sbGet('devolucoes', '?conferido=eq.false');
+    const entradas = await sbGet('entradas', '?status=neq.concluido');
+    const totalProntas = entradas.reduce((s, e) => s + (e.qtde_feita || 0), 0);
+
+    document.getElementById('conf-res-pend').textContent     = pend.length;
+    document.getElementById('conf-res-conferir').textContent = aConf.length;
+    document.getElementById('conf-res-prontas').textContent  = totalProntas.toLocaleString('pt-BR');
+  } catch(e) {}
+}
+
+async function renderConferencias() {
+  const mes = document.getElementById('conf-fil-mes')?.value || '';
+
+  // Pendentes de conferência
+  const elPend = document.getElementById('conf-lista-pendente');
+  try {
+    const pend = await sbGet('devolucoes', '?conferido=eq.false&order=created_at.desc');
+    if (!pend.length) {
+      elPend.innerHTML = '<div class="empty-state"><div class="ico">✅</div><p>Nenhuma devolução pendente de conferência.</p></div>';
+    } else {
+      let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Data</th><th>Colaborador</th><th class="r">Devolvido</th>
+        <th class="r">Aprovado</th><th class="r">Perda</th><th>Motivo</th>
+        <th class="r">Vlr Pagar</th><th>Ação</th>
+      </tr></thead><tbody>`;
+      for (const d of pend) {
+        const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
+        const distObj = dist[0] || {};
+        const dt = d.data_devolucao ? d.data_devolucao.split('-').reverse().join('/') : '—';
+        html += `<tr>
+          <td>${dt}</td>
+          <td>${distObj.colaborador_nome || '—'}</td>
+          <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
+          <td style="font-size:11px">${d.motivo_perda || '—'}</td>
+          <td class="r" style="font-weight:700;color:#276749">R$ ${(d.valor_a_pagar||0).toFixed(2).replace('.',',')}</td>
+          <td><button onclick="confOkRapido(${d.id})" style="background:#276749;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px">✅ OK</button></td>
+        </tr>`;
+      }
+      html += '</tbody></table></div>';
+      elPend.innerHTML = html;
+    }
+  } catch(e) { elPend.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+
+  // Histórico completo
+  const el = document.getElementById('conf-lista');
+  let p = '?order=created_at.desc';
+  if (mes) { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); p += `&data_devolucao=gte.${mes}-01&data_devolucao=lte.${mes}-${ul}`; }
+  try {
+    const lista = await sbGet('devolucoes', p);
+    if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">📋</div><p>Nenhuma devolução encontrada.</p></div>'; return; }
+
+    let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Data Dev.</th><th>Colaborador</th><th class="r">Devolvido</th>
+      <th class="r">Aprovado</th><th class="r">Perda</th><th>Motivo</th>
+      <th class="r">Vlr Pagar</th><th>Status</th>
+    </tr></thead><tbody>`;
+
+    for (const d of lista) {
+      const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
+      const distObj = dist[0] || {};
+      const dt = d.data_devolucao ? d.data_devolucao.split('-').reverse().join('/') : '—';
+      const statusBadge = d.conferido
+        ? '<span class="badge bg-green">✅ Conferido</span>'
+        : '<span class="badge bg-yellow">⏳ Pendente</span>';
+      html += `<tr>
+        <td>${dt}</td>
+        <td style="font-size:11px">${distObj.colaborador_nome || '—'}</td>
+        <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
+        <td style="font-size:11px">${d.motivo_perda || '—'}</td>
+        <td class="r" style="font-weight:700;color:#276749">R$ ${(d.valor_a_pagar||0).toFixed(2).replace('.',',')}</td>
+        <td>${statusBadge}</td>
       </tr>`;
     }
-    html+='</tbody></table>';el.innerHTML=html;
-  }catch(e){el.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`}
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
 }
 
-async function darOkConferencia(devId,distId,vlrMil){
-  confOkData={devId,distId,vlrMil};
-  document.getElementById('confok-qtde').value='';
-  document.getElementById('confok-valor').textContent='R$ 0,00';
-  abrirModal('modal-conf-ok');
-}
-
-function calcConfOk(){
-  const qtde=parseInt(document.getElementById('confok-qtde').value)||0;
-  const valor=(confOkData.vlrMil/1000)*qtde;
-  document.getElementById('confok-valor').textContent='R$ '+valor.toFixed(2).replace('.',',');
-}
-
-async function confirmarConferencia(){
-  const qtde=parseInt(document.getElementById('confok-qtde').value)||0;
-  if(!qtde){alerta('Informe a quantidade aprovada!','error');return}
-  const valor=(confOkData.vlrMil/1000)*qtde;
-  try{
-    await sbPatch('devolucoes',confOkData.devId,{conferido:true,data_conferencia:new Date().toISOString().split('T')[0],valor_a_pagar:valor});
-    if(confOkData.distId)await sbPatch('distribuicoes',confOkData.distId,{status:'conferido'});
-    fecharModal('modal-conf-ok');
-    alerta('Conferência confirmada!','success');
-    renderConferencias();
-  }catch(e){alerta('Erro: '+e.message,'error')}
+async function confOkRapido(devId) {
+  try {
+    await sbPatch('devolucoes', devId, { conferido: true, data_conferencia: new Date().toISOString().split('T')[0] });
+    alerta('Conferência confirmada!', 'success');
+    renderConferencias(); renderConfPainel();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
 // ===== FINANCEIRO =====
