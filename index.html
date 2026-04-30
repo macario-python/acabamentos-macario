@@ -384,25 +384,46 @@ table.tbl tbody tr:hover{background:#fafbfc}
 <!-- ========== DISTRIBUIÇÃO ========== -->
 <div id="tab-distribuicao" class="section">
   <div class="card">
-    <div class="card-title">Nova Distribuição para Colaborador</div>
+    <div class="card-title">Nova Distribuição</div>
+
+    <!-- Linha 1: Entrada, Tipo, Data, Qtde -->
     <div class="g4">
-      <div class="field"><label>Entrada <span class="req">*</span></label>
-        <select id="dist-entrada"><option value="">Selecione a entrada...</option></select></div>
-      <div class="field"><label>Colaborador <span class="req">*</span></label>
-        <select id="dist-colaborador"><option value="">Selecione...</option></select></div>
-      <div class="field"><label>Data Saída <span class="req">*</span></label><input type="date" id="dist-data"></div>
-      <div class="field"><label>Qtde Enviada <span class="req">*</span></label><input type="number" id="dist-qtde" placeholder="0" min="0"></div>
+      <div class="field">
+        <label>Entrada <span class="req">*</span></label>
+        <select id="dist-entrada" onchange="onDistEntradaChange()">
+          <option value="">Selecione a entrada...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tipo <span class="req">*</span></label>
+        <select id="dist-tipo" onchange="onDistTipoChange()">
+          <option value="">Selecione...</option>
+          <option value="rua">👥 Colaboradora da Rua</option>
+          <option value="interno">🏭 Produção Interna</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data Saída <span class="req">*</span></label>
+        <input type="date" id="dist-data">
+      </div>
+      <div class="field">
+        <label>Qtde Enviada <span class="req">*</span></label>
+        <input type="number" id="dist-qtde" placeholder="0" min="0" oninput="calcDistTotal()">
+        <span id="dist-saldo-info" style="font-size:10px;color:#718096;margin-top:2px"></span>
+      </div>
     </div>
-    <div class="g3" style="margin-top:12px">
-      <div class="field"><label>Serviço <span class="req">*</span></label>
-        <select id="dist-servico" onchange="calcDistValor()">
-          <option value="">Selecione o serviço...</option>
-          <optgroup label="Interno">
-            <option value="interno_completo" data-vlr="100">Completo — R$ 100/mil</option>
-            <option value="interno_dobrada" data-vlr="75">Já dobrada (-R$25) — R$ 75/mil</option>
-            <option value="interno_alca" data-vlr="80">Cola alça (-R$20) — R$ 80/mil</option>
-          </optgroup>
-          <optgroup label="Rua">
+
+    <!-- Colaboradora da Rua (1 pessoa) -->
+    <div id="dist-bloco-rua" style="display:none;margin-top:12px">
+      <div class="g3">
+        <div class="field">
+          <label>Colaboradora <span class="req">*</span></label>
+          <select id="dist-colaborador"><option value="">Selecione...</option></select>
+        </div>
+        <div class="field">
+          <label>Serviço <span class="req">*</span></label>
+          <select id="dist-servico" onchange="calcDistValor()">
+            <option value="">Selecione...</option>
             <option value="dobrar" data-vlr="25">Dobrar — R$ 25/mil</option>
             <option value="sanfona_fundo" data-vlr="40">Sanfona/Fundo-Saco — R$ 40/mil</option>
             <option value="sanfona_boca" data-vlr="50">Sanfona/Fundo+Boca — R$ 50/mil</option>
@@ -412,26 +433,83 @@ table.tbl tbody tr:hover{background:#fafbfc}
             <option value="saco_2vias" data-vlr="80">Saco 2 vias — R$ 80/mil</option>
             <option value="garfinhos" data-vlr="20">Garfinhos — R$ 20/mil</option>
             <option value="garrafa_1via" data-vlr="80">Garrafa 1 via — R$ 80/mil</option>
-          </optgroup>
-        </select></div>
-      <div class="field"><label>Vlr Milheiro (pagar)</label>
-        <input type="number" id="dist-vlr" placeholder="0,00" step="0.01" oninput="calcDistTotal()"></div>
-      <div class="field"><label>Valor Total a Pagar</label>
-        <div class="fc" id="dist-total">R$ 0,00</div></div>
+          </select>
+        </div>
+        <div class="field">
+          <label>Vlr Milheiro (pagar)</label>
+          <input type="number" id="dist-vlr" placeholder="0,00" step="0.01" oninput="calcDistTotal()">
+        </div>
+      </div>
     </div>
+
+    <!-- Produção Interna (múltiplas pessoas) -->
+    <div id="dist-bloco-interno" style="display:none;margin-top:12px">
+      <div class="g3">
+        <div class="field">
+          <label>Serviço <span class="req">*</span></label>
+          <select id="dist-servico-int" onchange="calcDistValorInt()">
+            <option value="">Selecione...</option>
+            <option value="interno_completo" data-vlr="100">Completo — R$ 100/mil</option>
+            <option value="interno_dobrada" data-vlr="75">Já dobrada (−R$25) — R$ 75/mil</option>
+            <option value="interno_alca" data-vlr="80">Cola alça (−R$20) — R$ 80/mil</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Vlr Milheiro (pagar)</label>
+          <input type="number" id="dist-vlr-int" placeholder="0,00" step="0.01" oninput="calcDistTotalInt()">
+        </div>
+        <div class="field">
+          <label>Valor Total a Dividir</label>
+          <div class="fc" id="dist-total-int">R$ 0,00</div>
+        </div>
+      </div>
+      <!-- Colaboradores internos dinâmicos -->
+      <div style="margin-top:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#718096;margin-bottom:8px;letter-spacing:.4px">
+          Colaboradores Internos <span style="color:#a0aec0;font-weight:400">(quem participou deste serviço)</span>
+        </div>
+        <div id="dist-internos-lista"></div>
+        <button class="btn-add-row" onclick="addColabInterno()" style="margin-top:6px">+ Adicionar Colaborador</button>
+        <div id="dist-divisao-preview" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Total resumo -->
+    <div class="g3" style="margin-top:12px" id="dist-resumo-row">
+      <div class="field">
+        <label>Saldo Disponível na Entrada</label>
+        <div class="fm" id="dist-saldo-disp">—</div>
+      </div>
+      <div class="field">
+        <label>Valor Total a Pagar</label>
+        <div class="fc" id="dist-total">R$ 0,00</div>
+      </div>
+      <div></div>
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-save" onclick="salvarDistribuicao()">💾 Registrar Distribuição</button>
     </div>
   </div>
+
   <div class="card">
-    <div class="card-title">Distribuições em Andamento</div>
+    <div class="card-title">Distribuições</div>
     <div class="filters">
-      <div class="field"><label>Colaborador</label><select id="dist-fil-colab"><option value="">Todos</option></select></div>
+      <div class="field"><label>Tipo</label>
+        <select id="dist-fil-tipo">
+          <option value="">Todos</option>
+          <option value="rua">Rua</option>
+          <option value="interno">Interno</option>
+        </select>
+      </div>
       <div class="field"><label>Status</label>
         <select id="dist-fil-status">
-          <option value="">Todos</option><option value="pendente">Pendente</option>
-          <option value="devolvido">Devolvido</option><option value="conferido">Conferido</option>
-        </select></div>
+          <option value="">Todos</option>
+          <option value="pendente">Pendente</option>
+          <option value="parcial">Parcial</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
       <div class="field"><label>Mês</label><input type="month" id="dist-fil-mes"></div>
       <button class="btn-filter" onclick="renderDistribuicoes()">Filtrar</button>
     </div>
@@ -1042,87 +1120,276 @@ async function renderEntradas() {
 async function delEntrada(id){if(!confirm('Excluir esta entrada?'))return;await sbDelete('entradas',id);renderEntradas();alerta('Entrada excluída.','success')}
 
 // ===== DISTRIBUIÇÃO =====
-async function carregarEntradasSelect(){
-  try{
-    const lista=await sbGet('entradas','?status=neq.concluido&order=data_entrada.desc');
-    const sel=document.getElementById('dist-entrada');
-    sel.innerHTML='<option value="">Selecione a entrada...</option>';
-    lista.forEach(e=>{
-      const o=document.createElement('option');
-      o.value=e.id;
-      const dt=e.data_entrada?e.data_entrada.split('-').reverse().join('/'):'';
-      o.textContent=`${dt} — ${e.fornecedor} — ${e.modelo} (${(e.qtde_total||0).toLocaleString('pt-BR')} un)`;
-      o.dataset.vlr=e.valor_milheiro_receber;
+let distEntradaAtual = null;
+let distInternosCount = 0;
+
+async function carregarEntradasSelect() {
+  try {
+    const lista = await sbGet('entradas', '?status=neq.concluido&order=data_prazo.asc,id.desc');
+    const sel = document.getElementById('dist-entrada');
+    sel.innerHTML = '<option value="">Selecione a entrada...</option>';
+    lista.forEach(e => {
+      if ((e.qtde_disponivel || 0) <= 0) return;
+      const o = document.createElement('option');
+      o.value = e.id;
+      const dt = e.data_entrada ? e.data_entrada.split('-').reverse().join('/') : '';
+      const prazo = e.data_prazo ? e.data_prazo.split('-').reverse().join('/') : '';
+      const tipo = [e.tipo_sacola, e.vias].filter(Boolean).join(' ');
+      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${(e.qtde_disponivel||0).toLocaleString('pt-BR')} | Prazo: ${prazo}`;
+      o.dataset.saldo = e.qtde_disponivel;
+      o.dataset.entradaObj = JSON.stringify(e);
       sel.appendChild(o);
     });
-  }catch(e){}
+  } catch(e) {}
 }
 
-function calcDistValor(){
-  const sel=document.getElementById('dist-servico');
-  const opt=sel.options[sel.selectedIndex];
-  const vlr=opt?.dataset?.vlr||0;
-  document.getElementById('dist-vlr').value=vlr;
+function onDistEntradaChange() {
+  const sel = document.getElementById('dist-entrada');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.dataset.entradaObj) {
+    distEntradaAtual = null;
+    document.getElementById('dist-saldo-disp').textContent = '—';
+    document.getElementById('dist-saldo-info').textContent = '';
+    return;
+  }
+  distEntradaAtual = JSON.parse(opt.dataset.entradaObj);
+  const saldo = distEntradaAtual.qtde_disponivel || 0;
+  document.getElementById('dist-saldo-disp').textContent = saldo.toLocaleString('pt-BR') + ' unidades';
+  document.getElementById('dist-saldo-info').textContent = `Saldo disponível: ${saldo.toLocaleString('pt-BR')}`;
   calcDistTotal();
 }
 
-function calcDistTotal(){
-  const qtde=parseFloat(document.getElementById('dist-qtde').value)||0;
-  const vlr=parseFloat(document.getElementById('dist-vlr').value)||0;
-  const total=(vlr/1000)*qtde;
-  document.getElementById('dist-total').textContent='R$ '+total.toFixed(2).replace('.',',');
+function onDistTipoChange() {
+  const tipo = document.getElementById('dist-tipo').value;
+  document.getElementById('dist-bloco-rua').style.display = tipo === 'rua' ? 'block' : 'none';
+  document.getElementById('dist-bloco-interno').style.display = tipo === 'interno' ? 'block' : 'none';
+  if (tipo === 'interno' && document.getElementById('dist-internos-lista').children.length === 0) {
+    addColabInterno();
+  }
 }
 
-async function salvarDistribuicao(){
-  const entId=document.getElementById('dist-entrada').value;
-  const colabId=document.getElementById('dist-colaborador').value;
-  const data=document.getElementById('dist-data').value;
-  const qtde=parseInt(document.getElementById('dist-qtde').value)||0;
-  const servico=document.getElementById('dist-servico').value;
-  const vlr=parseFloat(document.getElementById('dist-vlr').value)||0;
-  if(!entId||!colabId||!data||!qtde||!servico||!vlr){alerta('Preencha todos os campos!','error');return}
-  const colab=colaboradores.find(c=>c.id==colabId);
-  try{
-    await sbPost('distribuicoes',{entrada_id:parseInt(entId),colaborador_id:parseInt(colabId),colaborador_nome:colab?.nome||'',data_saida:data,qtde_enviada:qtde,servico,valor_milheiro_pagar:vlr,status:'pendente'});
-    alerta('Distribuição registrada!','success');
-    document.getElementById('dist-entrada').value='';document.getElementById('dist-colaborador').value='';
-    document.getElementById('dist-qtde').value='';document.getElementById('dist-servico').value='';
-    document.getElementById('dist-vlr').value='';document.getElementById('dist-total').textContent='R$ 0,00';
+function calcDistValor() {
+  const sel = document.getElementById('dist-servico');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('dist-vlr').value = opt?.dataset?.vlr || 0;
+  calcDistTotal();
+}
+
+function calcDistValorInt() {
+  const sel = document.getElementById('dist-servico-int');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('dist-vlr-int').value = opt?.dataset?.vlr || 0;
+  calcDistTotalInt();
+}
+
+function calcDistTotal() {
+  const qtde = parseFloat(document.getElementById('dist-qtde').value) || 0;
+  const vlr  = parseFloat(document.getElementById('dist-vlr').value) || 0;
+  const total = (vlr / 1000) * qtde;
+  document.getElementById('dist-total').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+
+  // Valida saldo
+  if (distEntradaAtual) {
+    const saldo = distEntradaAtual.qtde_disponivel || 0;
+    const info = document.getElementById('dist-saldo-info');
+    if (qtde > saldo) {
+      info.textContent = `⚠ Quantidade excede o saldo! Disponível: ${saldo.toLocaleString('pt-BR')}`;
+      info.style.color = '#e53e3e';
+    } else {
+      info.textContent = `Saldo disponível: ${saldo.toLocaleString('pt-BR')}`;
+      info.style.color = '#718096';
+    }
+  }
+}
+
+function calcDistTotalInt() {
+  const qtde = parseFloat(document.getElementById('dist-qtde').value) || 0;
+  const vlr  = parseFloat(document.getElementById('dist-vlr-int').value) || 0;
+  const total = (vlr / 1000) * qtde;
+  document.getElementById('dist-total-int').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+  document.getElementById('dist-total').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+  renderDivisaoPreview(total);
+}
+
+// Colaboradores internos dinâmicos
+function addColabInterno() {
+  const id = ++distInternosCount;
+  const lista = document.getElementById('dist-internos-lista');
+  const div = document.createElement('div');
+  div.id = 'colab-int-' + id;
+  div.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:6px';
+
+  let opts = '<option value="">Selecione...</option>';
+  colaboradores.filter(c => c.tipo === 'interno').forEach(c => {
+    opts += `<option value="${c.id}" data-nome="${c.nome}">${c.nome}</option>`;
+  });
+
+  div.innerHTML = `
+    <select onchange="renderDivisaoPreview()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 11px;font-size:13px;width:100%;outline:none;font-family:inherit">
+      ${opts}
+    </select>
+    <button onclick="document.getElementById('colab-int-${id}').remove();renderDivisaoPreview()" 
+      style="background:none;border:1.5px solid #fed7d7;border-radius:6px;color:#e53e3e;width:30px;height:34px;cursor:pointer;font-size:16px">×</button>
+  `;
+  lista.appendChild(div);
+  renderDivisaoPreview();
+}
+
+function renderDivisaoPreview(totalOverride) {
+  const totalStr = document.getElementById('dist-total-int').textContent;
+  const total = totalOverride !== undefined ? totalOverride : (parseFloat(totalStr.replace('R$','').replace(',','.').trim()) || 0);
+  const lista = document.getElementById('dist-internos-lista');
+  const sels = lista.querySelectorAll('select');
+  const nomes = [];
+  sels.forEach(s => { if (s.value) nomes.push(s.options[s.selectedIndex].dataset.nome || s.options[s.selectedIndex].text); });
+
+  const prev = document.getElementById('dist-divisao-preview');
+  if (!nomes.length || !total) { prev.innerHTML = ''; return; }
+
+  const porPessoa = total / nomes.length;
+  let html = `<div style="background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:8px;padding:10px 14px">
+    <div style="font-size:11px;font-weight:700;color:#276749;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">💰 Divisão do Pagamento</div>`;
+  nomes.forEach(n => {
+    html += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #c6f6d5;font-size:13px">
+      <span style="color:#276749">${n}</span>
+      <strong style="color:#276749">R$ ${porPessoa.toFixed(2).replace('.', ',')}</strong>
+    </div>`;
+  });
+  html += `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;font-weight:700">
+    <span>Total</span><span style="color:#276749">R$ ${total.toFixed(2).replace('.', ',')}</span>
+  </div></div>`;
+  prev.innerHTML = html;
+}
+
+async function salvarDistribuicao() {
+  const entId = document.getElementById('dist-entrada').value;
+  const tipo  = document.getElementById('dist-tipo').value;
+  const data  = document.getElementById('dist-data').value;
+  const qtde  = parseInt(document.getElementById('dist-qtde').value) || 0;
+
+  if (!entId) { alerta('Selecione a entrada!', 'error'); return; }
+  if (!tipo)  { alerta('Selecione o tipo (Rua ou Interno)!', 'error'); return; }
+  if (!data)  { alerta('Informe a data de saída!', 'error'); return; }
+  if (!qtde)  { alerta('Informe a quantidade!', 'error'); return; }
+
+  // Valida saldo
+  if (distEntradaAtual && qtde > (distEntradaAtual.qtde_disponivel || 0)) {
+    alerta(`Quantidade excede o saldo disponível (${distEntradaAtual.qtde_disponivel?.toLocaleString('pt-BR')})!`, 'error');
+    return;
+  }
+
+  let colaboradorNome = '', colaboradorId = null, servico = '', vlr = 0;
+  let colaboradoresInternos = [];
+
+  if (tipo === 'rua') {
+    const colabId = document.getElementById('dist-colaborador').value;
+    servico = document.getElementById('dist-servico').value;
+    vlr     = parseFloat(document.getElementById('dist-vlr').value) || 0;
+    if (!colabId) { alerta('Selecione a colaboradora!', 'error'); return; }
+    if (!servico) { alerta('Selecione o serviço!', 'error'); return; }
+    if (!vlr)     { alerta('Informe o valor por milheiro!', 'error'); return; }
+    const colab = colaboradores.find(c => c.id == colabId);
+    colaboradorNome = colab?.nome || '';
+    colaboradorId   = parseInt(colabId);
+  } else {
+    servico = document.getElementById('dist-servico-int').value;
+    vlr     = parseFloat(document.getElementById('dist-vlr-int').value) || 0;
+    if (!servico) { alerta('Selecione o serviço!', 'error'); return; }
+    if (!vlr)     { alerta('Informe o valor por milheiro!', 'error'); return; }
+
+    const sels = document.getElementById('dist-internos-lista').querySelectorAll('select');
+    sels.forEach(s => { if (s.value) colaboradoresInternos.push({ id: parseInt(s.value), nome: s.options[s.selectedIndex].dataset.nome || '' }); });
+    if (!colaboradoresInternos.length) { alerta('Adicione pelo menos um colaborador interno!', 'error'); return; }
+    colaboradorNome = colaboradoresInternos.map(c => c.nome).join(', ');
+  }
+
+  try {
+    // Salva distribuição
+    await sbPost('distribuicoes', {
+      entrada_id: parseInt(entId), tipo, colaborador_id: colaboradorId,
+      colaborador_nome: colaboradorNome,
+      colaboradores_internos: tipo === 'interno' ? JSON.stringify(colaboradoresInternos) : null,
+      data_saida: data, qtde_enviada: qtde, servico,
+      valor_milheiro_pagar: vlr, status: 'pendente'
+    });
+
+    // Baixa saldo da entrada
+    const novoSaldo = (distEntradaAtual?.qtde_disponivel || 0) - qtde;
+    const novaDistrib = (distEntradaAtual?.qtde_distribuida || 0) + qtde;
+    await sbPatch('entradas', entId, {
+      qtde_disponivel: novoSaldo,
+      qtde_distribuida: novaDistrib,
+      status: novoSaldo <= 0 ? 'em_andamento' : 'em_andamento'
+    });
+
+    alerta('Distribuição registrada! Saldo atualizado.', 'success');
+
+    // Limpa campos
+    document.getElementById('dist-entrada').value = '';
+    document.getElementById('dist-tipo').value = '';
+    document.getElementById('dist-qtde').value = '';
+    document.getElementById('dist-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('dist-bloco-rua').style.display = 'none';
+    document.getElementById('dist-bloco-interno').style.display = 'none';
+    document.getElementById('dist-internos-lista').innerHTML = '';
+    document.getElementById('dist-divisao-preview').innerHTML = '';
+    document.getElementById('dist-total').textContent = 'R$ 0,00';
+    document.getElementById('dist-saldo-disp').textContent = '—';
+    document.getElementById('dist-saldo-info').textContent = '';
+    distEntradaAtual = null; distInternosCount = 0;
+
     renderDistribuicoes();
-  }catch(e){alerta('Erro: '+e.message,'error')}
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
-async function renderDistribuicoes(){
-  const colab=document.getElementById('dist-fil-colab').value;
-  const status=document.getElementById('dist-fil-status').value;
-  const mes=document.getElementById('dist-fil-mes').value;
-  let p='?order=data_saida.desc,id.desc';
-  if(colab)p+=`&colaborador_id=eq.${colab}`;
-  if(status)p+=`&status=eq.${status}`;
-  if(mes){const[a,m]=mes.split('-');const ul=new Date(+a,+m,0).getDate();p+=`&data_saida=gte.${mes}-01&data_saida=lte.${mes}-${ul}`}
-  const el=document.getElementById('dist-lista');
-  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
-  try{
-    const lista=await sbGet('distribuicoes',p);
-    if(!lista.length){el.innerHTML='<div class="empty-state"><div class="ico">🔀</div><p>Nenhuma distribuição encontrada.</p></div>';return}
-    let html=`<table class="tbl"><thead><tr><th>Data Saída</th><th>Colaborador</th><th>Serviço</th><th style="text-align:right">Qtde</th><th style="text-align:right">Vlr/Mil</th><th style="text-align:right">Total</th><th>Status</th></tr></thead><tbody>`;
-    lista.forEach(d=>{
-      const dt=d.data_saida?d.data_saida.split('-').reverse().join('/'):'—';
-      const total=((d.valor_milheiro_pagar||0)/1000)*(d.qtde_enviada||0);
-      const colab=colaboradores.find(c=>c.id==d.colaborador_id);
-      const tipo=colab?.tipo||'rua';
-      html+=`<tr>
-        <td data-label="Data">${dt}</td>
-        <td data-label="Colaborador"><span class="badge b-${tipo}">${d.colaborador_nome}</span></td>
-        <td data-label="Serviço" style="font-size:11px">${d.servico}</td>
-        <td data-label="Qtde" style="text-align:right;font-weight:600">${(d.qtde_enviada||0).toLocaleString('pt-BR')}</td>
-        <td data-label="Vlr/Mil" style="text-align:right">R$ ${(d.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</td>
-        <td data-label="Total" style="text-align:right;font-weight:700;color:#276749">R$ ${total.toFixed(2).replace('.',',')}</td>
-        <td data-label="Status"><span class="badge b-${d.status}">${d.status==='pendente'?'⏳ Pendente':d.status==='devolvido'?'📦 Devolvido':'✅ Conferido'}</span></td>
+async function renderDistribuicoes() {
+  const tipo   = document.getElementById('dist-fil-tipo').value;
+  const status = document.getElementById('dist-fil-status').value;
+  const mes    = document.getElementById('dist-fil-mes').value;
+  let p = '?order=data_saida.desc,id.desc';
+  if (tipo)   p += `&tipo=eq.${tipo}`;
+  if (status) p += `&status=eq.${status}`;
+  if (mes) { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); p += `&data_saida=gte.${mes}-01&data_saida=lte.${mes}-${ul}`; }
+
+  const el = document.getElementById('dist-lista');
+  el.innerHTML = '<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+  try {
+    const lista = await sbGet('distribuicoes', p);
+    if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">🔀</div><p>Nenhuma distribuição encontrada.</p></div>'; return; }
+
+    let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Data Saída</th><th>Tipo</th><th>Colaborador(es)</th><th>Serviço</th>
+      <th class="r">Enviado</th><th class="r">Retornado</th><th class="r">Aprovado</th><th class="r">Perda</th>
+      <th class="r">Vlr/Mil</th><th class="r">Total</th><th>Status</th>
+    </tr></thead><tbody>`;
+
+    lista.forEach(d => {
+      const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '—';
+      const total = ((d.valor_milheiro_pagar||0)/1000) * (d.qtde_aprovada||d.qtde_enviada||0);
+      const tipoBadge = d.tipo === 'interno'
+        ? '<span class="badge bg-purple">🏭 Interno</span>'
+        : '<span class="badge bg-blue">👥 Rua</span>';
+      const statusBadge = d.status === 'pendente' ? '<span class="badge bg-yellow">⏳ Pendente</span>'
+        : d.status === 'parcial' ? '<span class="badge bg-blue">📦 Parcial</span>'
+        : '<span class="badge bg-green">✅ Concluído</span>';
+
+      html += `<tr>
+        <td>${dt}</td>
+        <td>${tipoBadge}</td>
+        <td style="font-size:11px">${d.colaborador_nome}</td>
+        <td style="font-size:11px">${d.servico}</td>
+        <td class="r"><strong>${(d.qtde_enviada||0).toLocaleString('pt-BR')}</strong></td>
+        <td class="r" style="color:#2b6cb0">${(d.qtde_retornada||0).toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
+        <td class="r">R$ ${(d.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</td>
+        <td class="r" style="font-weight:700;color:#276749">R$ ${total.toFixed(2).replace('.',',')}</td>
+        <td>${statusBadge}</td>
       </tr>`;
     });
-    html+='</tbody></table>';el.innerHTML=html;
-  }catch(e){el.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`}
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
 }
 
 // ===== CONFERÊNCIA =====
