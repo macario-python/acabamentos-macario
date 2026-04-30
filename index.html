@@ -104,6 +104,14 @@ table.tbl tbody tr:hover{background:#fafbfc}
 .filters{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
 .filters .field{min-width:140px}
 .btn-filter{background:#1a1a2e;color:#f6c90e;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.tbl-wrap{overflow-x:auto}
+/* Semáforo de prazo */
+.prazo-ok{color:#276749;font-weight:700;font-size:11px}
+.prazo-alerta{color:#d97706;font-weight:700;font-size:11px}
+.prazo-urgente{color:#e53e3e;font-weight:700;font-size:11px;animation:blink .8s infinite}
+.prazo-atrasado{color:#c53030;font-weight:700;font-size:11px}
+.prazo-entregue{color:#276749;font-weight:700;font-size:11px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* Painel resumo */
 .painel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
@@ -282,22 +290,69 @@ table.tbl tbody tr:hover{background:#fafbfc}
 <div id="tab-entrada" class="section">
   <div class="card">
     <div class="card-title">Nova Entrada de Serviço</div>
+
+    <!-- Linha 1: Fornecedor, Data Entrada, Data Prazo, Condição Pagamento -->
     <div class="g4">
-      <div class="field"><label>Fornecedor <span class="req">*</span></label>
-        <select id="ent-fornecedor">
+      <div class="field">
+        <label>Fornecedor <span class="req">*</span></label>
+        <select id="ent-fornecedor" onchange="onFornecedorChange()">
           <option value="">Selecione...</option>
           <option>Gráfica Cristina</option><option>IPE</option><option>Mix</option>
           <option>Alcalima</option><option>Favorita</option><option>Sorria</option>
-        </select></div>
+        </select>
+      </div>
       <div class="field"><label>Data Entrada <span class="req">*</span></label><input type="date" id="ent-data"></div>
-      <div class="field"><label>Modelo <span class="req">*</span></label><input type="text" id="ent-modelo" placeholder="Ex: Sacola 1 via"></div>
-      <div class="field"><label>Descrição</label><input type="text" id="ent-descricao" placeholder="Ex: JustBurguer G29"></div>
+      <div class="field"><label>⏰ Prazo de Entrega <span class="req">*</span></label><input type="date" id="ent-prazo"></div>
+      <div class="field">
+        <label>💳 Condição de Pagamento <span class="req">*</span></label>
+        <input type="text" id="ent-cond-pag" placeholder="Ex: Toda segunda-feira">
+      </div>
     </div>
+
+    <!-- Linha 2: Tipo, Vias, Acabamento, Modelo -->
+    <div class="g4" style="margin-top:12px">
+      <div class="field">
+        <label>Tipo de Sacola <span class="req">*</span></label>
+        <select id="ent-tipo">
+          <option value="">Selecione...</option>
+          <option>Saco</option>
+          <option>Sacola</option>
+          <option>Garrafa</option>
+          <option>Garfinhos</option>
+          <option>Porta Talher</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vias</label>
+        <select id="ent-vias">
+          <option value="">—</option>
+          <option>1 via</option>
+          <option>2 vias</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Acabamento</label>
+        <select id="ent-acabamento">
+          <option value="">—</option>
+          <option>Com alça colada</option>
+          <option>Sem alça</option>
+          <option>Com cordão</option>
+          <option>Sem cordão</option>
+          <option>Com ilhós</option>
+          <option>Sem ilhós</option>
+          <option>Alça torcida</option>
+        </select>
+      </div>
+      <div class="field"><label>Modelo / Descrição <span class="req">*</span></label><input type="text" id="ent-modelo" placeholder="Ex: JustBurguer G29"></div>
+    </div>
+
+    <!-- Linha 3: Qtde, Vlr Milheiro, Obs -->
     <div class="g3" style="margin-top:12px">
       <div class="field"><label>Qtde Total <span class="req">*</span></label><input type="number" id="ent-qtde" placeholder="0" min="0"></div>
-      <div class="field"><label>Vlr Milheiro (receber) <span class="req">*</span></label><input type="number" id="ent-vlr" placeholder="0,00" step="0.01"></div>
+      <div class="field"><label>Vlr Milheiro (a receber) <span class="req">*</span></label><input type="number" id="ent-vlr" placeholder="0,00" step="0.01"></div>
       <div class="field"><label>Observação</label><input type="text" id="ent-obs" placeholder="Opcional"></div>
     </div>
+
     <div class="btn-row">
       <button class="btn btn-save" onclick="salvarEntrada()">💾 Registrar Entrada</button>
     </div>
@@ -312,6 +367,14 @@ table.tbl tbody tr:hover{background:#fafbfc}
           <option>Alcalima</option><option>Favorita</option><option>Sorria</option>
         </select></div>
       <div class="field"><label>Mês</label><input type="month" id="ent-fil-mes"></div>
+      <div class="field"><label>Status</label>
+        <select id="ent-fil-status">
+          <option value="">Todos</option>
+          <option value="aberto">Aberto</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
       <button class="btn-filter" onclick="renderEntradas()">Filtrar</button>
     </div>
     <div id="ent-lista"><div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div></div>
@@ -549,8 +612,8 @@ window.onload=async()=>{
   const hoje=new Date().toISOString().split('T')[0];
   const mes=new Date().toISOString().slice(0,7);
   document.getElementById('inp-data').value=hoje;
-  document.getElementById('ent-data').value=hoje;
-  document.getElementById('dist-data').value=hoje;
+  document.getElementById('ent-data').value = hoje;
+  document.getElementById('dist-data').value = hoje;
   document.getElementById('conf-data').value=hoje;
   document.getElementById('ent-fil-mes').value=mes;
   document.getElementById('dist-fil-mes').value=mes;
@@ -837,51 +900,143 @@ function gerarPDF(r){
 }
 
 // ===== ENTRADA =====
-async function salvarEntrada(){
-  const forn=document.getElementById('ent-fornecedor').value;
-  const data=document.getElementById('ent-data').value;
-  const modelo=document.getElementById('ent-modelo').value.trim();
-  const qtde=parseInt(document.getElementById('ent-qtde').value)||0;
-  const vlr=parseFloat(document.getElementById('ent-vlr').value)||0;
-  if(!forn||!data||!modelo||!qtde||!vlr){alerta('Preencha todos os campos obrigatórios!','error');return}
-  try{
-    await sbPost('entradas',{fornecedor:forn,data_entrada:data,modelo,descricao:document.getElementById('ent-descricao').value.trim(),qtde_total:qtde,valor_milheiro_receber:vlr,observacao:document.getElementById('ent-obs').value.trim(),status:'aberto'});
-    alerta('Entrada registrada!','success');
-    document.getElementById('ent-fornecedor').value='';document.getElementById('ent-modelo').value='';
-    document.getElementById('ent-descricao').value='';document.getElementById('ent-qtde').value='';
-    document.getElementById('ent-vlr').value='';document.getElementById('ent-obs').value='';
-    document.getElementById('ent-data').value=new Date().toISOString().split('T')[0];
-    renderEntradas();
-  }catch(e){alerta('Erro: '+e.message,'error')}
+// ===== FORNECEDOR → CONDIÇÃO DE PAGAMENTO =====
+async function onFornecedorChange() {
+  const forn = document.getElementById('ent-fornecedor').value;
+  if (!forn) return;
+  try {
+    const rows = await sbGet('condicoes_pagamento', `?fornecedor=eq.${encodeURIComponent(forn)}`);
+    if (rows && rows[0]) {
+      document.getElementById('ent-cond-pag').value = rows[0].condicao || '';
+    }
+  } catch(e) {}
 }
 
-async function renderEntradas(){
-  const forn=document.getElementById('ent-fil-forn').value;
-  const mes=document.getElementById('ent-fil-mes').value;
-  let p='?order=data_entrada.desc,id.desc';
-  if(forn)p+=`&fornecedor=eq.${encodeURIComponent(forn)}`;
-  if(mes){const[a,m]=mes.split('-');const ul=new Date(+a,+m,0).getDate();p+=`&data_entrada=gte.${mes}-01&data_entrada=lte.${mes}-${ul}`}
-  const el=document.getElementById('ent-lista');
-  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
-  try{
-    const lista=await sbGet('entradas',p);
-    if(!lista.length){el.innerHTML='<div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div>';return}
-    let html=`<table class="tbl"><thead><tr><th>Data</th><th>Fornecedor</th><th>Modelo</th><th>Descrição</th><th style="text-align:right">Qtde</th><th style="text-align:right">Vlr/Mil</th><th>Status</th><th>Ações</th></tr></thead><tbody>`;
-    lista.forEach(e=>{
-      const dt=e.data_entrada?e.data_entrada.split('-').reverse().join('/'):'—';
-      html+=`<tr>
-        <td data-label="Data">${dt}</td>
-        <td data-label="Fornecedor"><span class="badge b-andamento">${e.fornecedor}</span></td>
-        <td data-label="Modelo">${e.modelo}</td>
-        <td data-label="Descrição">${e.descricao||'—'}</td>
-        <td data-label="Qtde" style="text-align:right;font-weight:600">${(e.qtde_total||0).toLocaleString('pt-BR')}</td>
-        <td data-label="Vlr/Mil" style="text-align:right">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
-        <td data-label="Status"><span class="badge b-${e.status}">${e.status==='aberto'?'Aberto':e.status==='em_andamento'?'Em andamento':'Concluído'}</span></td>
-        <td><button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button></td>
+// ===== SEMÁFORO DE PRAZO =====
+function calcPrazo(dataPrazo, dataEntregue) {
+  if (!dataPrazo) return { html: '—', dias: null };
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const prazo = new Date(dataPrazo + 'T00:00:00');
+  const diff = Math.round((prazo - hoje) / (1000*60*60*24));
+
+  if (dataEntregue) {
+    const entregue = new Date(dataEntregue + 'T00:00:00');
+    const antecipado = Math.round((prazo - entregue) / (1000*60*60*24));
+    if (antecipado >= 0) return { html: `<span class="prazo-entregue">✅ Entregue ${antecipado > 0 ? antecipado+'d antes' : 'no prazo'}</span>`, dias: antecipado };
+    return { html: `<span class="prazo-atrasado">⚠ Entregue ${Math.abs(antecipado)}d atrasado</span>`, dias: antecipado };
+  }
+
+  if (diff < 0) return { html: `<span class="prazo-atrasado">🔴 ${Math.abs(diff)}d atrasado</span>`, dias: diff };
+  if (diff === 0) return { html: `<span class="prazo-urgente">🚨 HOJE!</span>`, dias: 0 };
+  if (diff <= 2) return { html: `<span class="prazo-urgente">🔴 ${diff}d restante${diff>1?'s':''}</span>`, dias: diff };
+  if (diff <= 5) return { html: `<span class="prazo-alerta">🟡 ${diff}d restantes</span>`, dias: diff };
+  return { html: `<span class="prazo-ok">🟢 ${diff}d restantes</span>`, dias: diff };
+}
+
+// ===== SALVAR ENTRADA =====
+async function salvarEntrada() {
+  const forn   = document.getElementById('ent-fornecedor').value;
+  const data   = document.getElementById('ent-data').value;
+  const prazo  = document.getElementById('ent-prazo').value;
+  const cond   = document.getElementById('ent-cond-pag').value.trim();
+  const tipo   = document.getElementById('ent-tipo').value;
+  const vias   = document.getElementById('ent-vias').value;
+  const acab   = document.getElementById('ent-acabamento').value;
+  const modelo = document.getElementById('ent-modelo').value.trim();
+  const qtde   = parseInt(document.getElementById('ent-qtde').value) || 0;
+  const vlr    = parseFloat(document.getElementById('ent-vlr').value) || 0;
+  const obs    = document.getElementById('ent-obs').value.trim();
+
+  if (!forn)   { alerta('Selecione o fornecedor!', 'error'); return; }
+  if (!data)   { alerta('Informe a data de entrada!', 'error'); return; }
+  if (!prazo)  { alerta('⏰ Prazo de entrega é obrigatório!', 'error'); return; }
+  if (!cond)   { alerta('💳 Condição de pagamento é obrigatória!', 'error'); return; }
+  if (!tipo)   { alerta('Selecione o tipo de sacola!', 'error'); return; }
+  if (!modelo) { alerta('Informe o modelo/descrição!', 'error'); return; }
+  if (!qtde)   { alerta('Informe a quantidade!', 'error'); return; }
+  if (!vlr)    { alerta('Informe o valor por milheiro!', 'error'); return; }
+
+  try {
+    await sbPost('entradas', {
+      fornecedor: forn, data_entrada: data, data_prazo: prazo,
+      condicao_pagamento: cond, tipo_sacola: tipo, vias, acabamento: acab,
+      modelo, qtde_total: qtde, qtde_disponivel: qtde,
+      valor_milheiro_receber: vlr, observacao: obs, status: 'aberto'
+    });
+
+    // Salva/atualiza condição de pagamento do fornecedor
+    await sbUpsert('condicoes_pagamento', [{ fornecedor: forn, condicao: cond }]);
+
+    alerta('Entrada registrada!', 'success');
+    // Limpa campos
+    ['ent-fornecedor','ent-prazo','ent-tipo','ent-vias','ent-acabamento','ent-modelo','ent-qtde','ent-vlr','ent-obs'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('ent-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('ent-cond-pag').value = '';
+    renderEntradas();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
+}
+
+// ===== RENDER ENTRADAS =====
+async function renderEntradas() {
+  const forn   = document.getElementById('ent-fil-forn').value;
+  const mes    = document.getElementById('ent-fil-mes').value;
+  const status = document.getElementById('ent-fil-status')?.value || '';
+  const el     = document.getElementById('ent-lista');
+  el.innerHTML = '<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+
+  let p = '?order=data_prazo.asc,id.desc';
+  if (forn)   p += `&fornecedor=eq.${encodeURIComponent(forn)}`;
+  if (status) p += `&status=eq.${status}`;
+  if (mes) {
+    const [a,m] = mes.split('-');
+    const ul = new Date(+a, +m, 0).getDate();
+    p += `&data_entrada=gte.${mes}-01&data_entrada=lte.${mes}-${ul}`;
+  }
+
+  try {
+    const lista = await sbGet('entradas', p);
+    if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
+
+    let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Data</th><th>Fornecedor</th><th>Tipo</th><th>Modelo</th>
+      <th class="r">Total</th><th class="r">Disponível</th><th class="r">Na Rua</th><th class="r">Feito</th>
+      <th class="r">Vlr/Mil</th><th>Prazo</th><th>Pagamento</th><th>Status</th><th>Ações</th>
+    </tr></thead><tbody>`;
+
+    lista.forEach(e => {
+      const dt = e.data_entrada ? e.data_entrada.split('-').reverse().join('/') : '—';
+      const prazoInfo = calcPrazo(e.data_prazo, e.status === 'concluido' ? e.data_prazo : null);
+      const tipoStr = [e.tipo_sacola, e.vias, e.acabamento].filter(Boolean).join(' · ');
+      const naRua = (e.qtde_distribuida || 0) - (e.qtde_feita || 0);
+      const statusBadge = e.status === 'aberto' ? '<span class="badge bg-yellow">Aberto</span>'
+        : e.status === 'em_andamento' ? '<span class="badge bg-blue">Em andamento</span>'
+        : '<span class="badge bg-green">Concluído</span>';
+
+      html += `<tr>
+        <td>${dt}</td>
+        <td><strong>${e.fornecedor}</strong></td>
+        <td style="font-size:11px">${tipoStr||'—'}</td>
+        <td>${e.modelo}</td>
+        <td class="r"><strong>${(e.qtde_total||0).toLocaleString('pt-BR')}</strong></td>
+        <td class="r" style="color:${(e.qtde_disponivel||0)>0?'#276749':'#718096'}">${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#2b6cb0">${naRua.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749">${(e.qtde_feita||0).toLocaleString('pt-BR')}</td>
+        <td class="r">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
+        <td style="white-space:nowrap">${prazoInfo.html}</td>
+        <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>
+        </td>
       </tr>`;
     });
-    html+='</tbody></table>';el.innerHTML=html;
-  }catch(e){el.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`}
+
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>Erro: ${e.message}</p></div>`; }
 }
 
 async function delEntrada(id){if(!confirm('Excluir esta entrada?'))return;await sbDelete('entradas',id);renderEntradas();alerta('Entrada excluída.','success')}
