@@ -225,7 +225,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('romaneio',this)">📋 Romaneio</div>
+  <div class="tab active" onclick="showTab('painel',this)">📊 Painel</div>
+  <div class="tab" onclick="showTab('romaneio',this)">📋 Romaneio</div>
   <div class="tab" onclick="showTab('entrada',this)">📥 Entrada</div>
   <div class="tab" onclick="showTab('distribuicao',this)">🔀 Distribuição</div>
   <div class="tab" onclick="showTab('conferencia',this)">✅ Conferência</div>
@@ -236,8 +237,39 @@ table.tbl tbody tr:hover{background:#fafbfc}
 <div class="content">
 <div id="alert-box" style="display:none"></div>
 
+<!-- ========== PAINEL ========== -->
+<div id="tab-painel" class="section active">
+
+  <!-- Resumo geral -->
+  <div class="painel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+    <div class="p-box dark"><label>📥 Entradas Ativas</label><div class="val" id="pai-entradas">—</div><div class="sub" id="pai-entradas-un">—</div></div>
+    <div class="p-box"><label>🔀 Na Rua</label><div class="val" id="pai-rua" style="color:#2b6cb0">—</div><div class="sub" id="pai-rua-un">—</div></div>
+    <div class="p-box"><label>✅ Prontas</label><div class="val" id="pai-prontas" style="color:#276749">—</div><div class="sub" id="pai-prontas-un">—</div></div>
+    <div class="p-box"><label>📦 A Fazer</label><div class="val" id="pai-afazer" style="color:#92400e">—</div><div class="sub" id="pai-afazer-un">—</div></div>
+  </div>
+
+  <!-- Alertas de prazo -->
+  <div id="pai-alertas" style="margin-bottom:14px"></div>
+
+  <!-- Por Fornecedor -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0">Situação por Fornecedor</div>
+      <button class="btn-filter" onclick="renderPainel()">🔄 Atualizar</button>
+    </div>
+    <div id="pai-fornecedores"><div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div></div>
+  </div>
+
+  <!-- Por Colaborador -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-title">Situação por Colaborador</div>
+    <div id="pai-colaboradores"><div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div></div>
+  </div>
+
+</div>
+
 <!-- ========== ROMANEIO ========== -->
-<div id="tab-romaneio" class="section active">
+<div id="tab-romaneio" class="section">
   <div id="pix-warn" class="pix-warn">⚠ Configure sua Chave PIX antes de exportar.</div>
   <div class="card">
     <div class="card-title">Dados do Romaneio</div>
@@ -796,11 +828,11 @@ window.onload=async()=>{
   await carregarConfig();
   await carregarColaboradores();
   addItem();
+  renderPainel();
   iniciarRealtime();
   setInterval(()=>{
-    const at=document.querySelector('.tab.active');
-    if(at){}
-  },30000);
+    if(document.getElementById('tab-painel').classList.contains('active')) renderPainel();
+  },60000);
 };
 
 async function carregarConfig(){
@@ -847,12 +879,198 @@ async function carregarColaboradores(){
   }catch(e){}
 }
 
+// ===== PAINEL GERAL =====
+async function renderPainel() {
+  try {
+    // Busca todas entradas ativas
+    const entradas = await sbGet('entradas', '?status=neq.concluido&order=data_prazo.asc');
+    const distribuicoes = await sbGet('distribuicoes', '?status=in.(pendente,parcial)');
+
+    // Totais gerais
+    const totalEntradas = entradas.length;
+    const totalUnid     = entradas.reduce((s,e) => s+(e.qtde_total||0), 0);
+    const totalRua      = entradas.reduce((s,e) => s+((e.qtde_distribuida||0)-(e.qtde_feita||0)), 0);
+    const totalProntas  = entradas.reduce((s,e) => s+(e.qtde_feita||0), 0);
+    const totalDisp     = entradas.reduce((s,e) => s+(e.qtde_disponivel||0), 0);
+
+    document.getElementById('pai-entradas').textContent    = totalEntradas;
+    document.getElementById('pai-entradas-un').textContent = totalUnid.toLocaleString('pt-BR') + ' un total';
+    document.getElementById('pai-rua').textContent         = totalRua.toLocaleString('pt-BR');
+    document.getElementById('pai-rua-un').textContent      = distribuicoes.length + ' distribuições';
+    document.getElementById('pai-prontas').textContent     = totalProntas.toLocaleString('pt-BR');
+    document.getElementById('pai-prontas-un').textContent  = 'aguardando entrega';
+    document.getElementById('pai-afazer').textContent      = totalDisp.toLocaleString('pt-BR');
+    document.getElementById('pai-afazer-un').textContent   = 'disponível p/ distribuir';
+
+    // Alertas de prazo
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const alertasEl = document.getElementById('pai-alertas');
+    const alertas = entradas.filter(e => {
+      if (!e.data_prazo) return false;
+      const prazo = new Date(e.data_prazo + 'T00:00:00');
+      const diff = Math.round((prazo - hoje)/(1000*60*60*24));
+      return diff <= 5;
+    });
+
+    if (alertas.length) {
+      let ah = `<div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:.4px">⚠ Prazos em Alerta</div>`;
+      alertas.forEach(e => {
+        const prazo = new Date(e.data_prazo + 'T00:00:00');
+        const diff  = Math.round((prazo - hoje)/(1000*60*60*24));
+        const dtFmt = e.data_prazo.split('-').reverse().join('/');
+        const cor   = diff < 0 ? '#c53030' : diff <= 2 ? '#e53e3e' : '#d97706';
+        const txt   = diff < 0 ? `${Math.abs(diff)}d ATRASADO` : diff === 0 ? 'HOJE' : `${diff}d restantes`;
+        const feito = e.qtde_feita || 0;
+        const total = e.qtde_total || 0;
+        const pct   = total > 0 ? Math.round(feito/total*100) : 0;
+
+        ah += `<div style="background:#fff;border:1.5px solid ${cor};border-radius:10px;padding:12px 16px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div>
+              <strong style="color:#1a1a2e">${e.fornecedor}</strong>
+              <span style="font-size:11px;color:#718096;margin-left:8px">${e.modelo}</span>
+            </div>
+            <span style="font-weight:700;color:${cor};font-size:13px">⏰ ${txt} — ${dtFmt}</span>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
+            <span>Total: <strong>${total.toLocaleString('pt-BR')}</strong></span>
+            <span style="color:#276749">Prontas: <strong>${feito.toLocaleString('pt-BR')}</strong></span>
+            <span style="color:#2b6cb0">Na Rua: <strong>${((e.qtde_distribuida||0)-(feito)).toLocaleString('pt-BR')}</strong></span>
+            <span style="color:#92400e">A Fazer: <strong>${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</strong></span>
+          </div>
+          <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${pct>=100?'#276749':pct>=50?'#f6c90e':'#e53e3e'};transition:width .3s;border-radius:4px"></div>
+          </div>
+          <div style="font-size:10px;color:#718096;margin-top:3px">${pct}% concluído · Cond: ${e.condicao_pagamento||'—'}</div>
+        </div>`;
+      });
+      alertasEl.innerHTML = ah;
+    } else {
+      alertasEl.innerHTML = '';
+    }
+
+    // Por fornecedor
+    if (!entradas.length) {
+      document.getElementById('pai-fornecedores').innerHTML = '<div class="empty-state"><div class="ico">📊</div><p>Nenhuma entrada ativa.</p></div>';
+    } else {
+      // Agrupa por fornecedor
+      const porForn = {};
+      entradas.forEach(e => {
+        if (!porForn[e.fornecedor]) porForn[e.fornecedor] = { itens: [], totalUn: 0, totalRua: 0, totalProntas: 0, totalDisp: 0, totalVal: 0 };
+        porForn[e.fornecedor].itens.push(e);
+        porForn[e.fornecedor].totalUn      += e.qtde_total || 0;
+        porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
+        porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
+        porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
+        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro_receber||0);
+      });
+
+      let html = '';
+      Object.entries(porForn).forEach(([forn, g]) => {
+        const pct = g.totalUn > 0 ? Math.round((g.totalProntas/g.totalUn)*100) : 0;
+        html += `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <strong style="font-size:15px">${forn}</strong>
+            <span style="font-size:11px;color:#718096">${g.itens.length} serviço${g.itens.length>1?'s':''} em aberto</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+            <div style="text-align:center;background:#f7fafc;border-radius:8px;padding:8px">
+              <div style="font-size:10px;color:#718096;text-transform:uppercase;font-weight:700">Total</div>
+              <div style="font-size:16px;font-weight:800">${g.totalUn.toLocaleString('pt-BR')}</div>
+            </div>
+            <div style="text-align:center;background:#ebf8ff;border-radius:8px;padding:8px">
+              <div style="font-size:10px;color:#2b6cb0;text-transform:uppercase;font-weight:700">Na Rua</div>
+              <div style="font-size:16px;font-weight:800;color:#2b6cb0">${g.totalRua.toLocaleString('pt-BR')}</div>
+            </div>
+            <div style="text-align:center;background:#f0fff4;border-radius:8px;padding:8px">
+              <div style="font-size:10px;color:#276749;text-transform:uppercase;font-weight:700">Prontas</div>
+              <div style="font-size:16px;font-weight:800;color:#276749">${g.totalProntas.toLocaleString('pt-BR')}</div>
+            </div>
+            <div style="text-align:center;background:#fffbeb;border-radius:8px;padding:8px">
+              <div style="font-size:10px;color:#92400e;text-transform:uppercase;font-weight:700">A Fazer</div>
+              <div style="font-size:16px;font-weight:800;color:#92400e">${g.totalDisp.toLocaleString('pt-BR')}</div>
+            </div>
+          </div>
+          <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;margin-bottom:4px">
+            <div style="height:100%;width:${pct}%;background:${pct>=100?'#276749':pct>=50?'#f6c90e':'#e53e3e'};border-radius:4px;transition:width .3s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#718096">
+            <span>${pct}% concluído</span>
+            <span style="color:#276749;font-weight:700">R$ ${g.totalVal.toFixed(2).replace('.',',')} a receber (prontas)</span>
+          </div>
+          ${g.itens.map(e => {
+            const p2 = e.data_prazo ? e.data_prazo.split('-').reverse().join('/') : '—';
+            const prazoInfo = calcPrazo(e.data_prazo, null);
+            return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+              <span><strong>${e.modelo}</strong> <span style="color:#718096">${[e.tipo_sacola,e.vias].filter(Boolean).join(' ')}</span></span>
+              <span>${prazoInfo.html}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      });
+      document.getElementById('pai-fornecedores').innerHTML = html;
+    }
+
+    // Por colaborador (distribuições ativas)
+    if (!distribuicoes.length) {
+      document.getElementById('pai-colaboradores').innerHTML = '<div class="empty-state"><div class="ico">👥</div><p>Nenhuma distribuição em andamento.</p></div>';
+    } else {
+      const porColab = {};
+      distribuicoes.forEach(d => {
+        const nome = d.colaborador_nome || '—';
+        if (!porColab[nome]) porColab[nome] = { nome, tipo: d.tipo||'rua', enviado: 0, retornado: 0, aprovado: 0, perda: 0, pendente: 0, itens: [] };
+        porColab[nome].enviado   += d.qtde_enviada   || 0;
+        porColab[nome].retornado += d.qtde_retornada || 0;
+        porColab[nome].aprovado  += d.qtde_aprovada  || 0;
+        porColab[nome].perda     += d.qtde_perda     || 0;
+        porColab[nome].pendente  += Math.max(0,(d.qtde_enviada||0)-(d.qtde_retornada||0));
+        porColab[nome].itens.push(d);
+      });
+
+      let html2 = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Colaborador</th><th>Tipo</th>
+        <th class="r">Enviado</th><th class="r">Retornou</th>
+        <th class="r">Aprovado</th><th class="r">Perda</th>
+        <th class="r">Pendente</th><th>Progresso</th>
+      </tr></thead><tbody>`;
+
+      Object.values(porColab).forEach(c => {
+        const pct = c.enviado > 0 ? Math.round(c.retornado/c.enviado*100) : 0;
+        const tipoBadge = c.tipo === 'interno'
+          ? '<span class="badge bg-purple">🏭 Interno</span>'
+          : '<span class="badge bg-blue">👥 Rua</span>';
+        html2 += `<tr>
+          <td><strong>${c.nome}</strong></td>
+          <td>${tipoBadge}</td>
+          <td class="r">${c.enviado.toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#2b6cb0">${c.retornado.toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#276749;font-weight:700">${c.aprovado.toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#92400e;font-weight:700">${c.pendente.toLocaleString('pt-BR')}</td>
+          <td style="min-width:80px">
+            <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${pct>=100?'#276749':pct>=50?'#f6c90e':'#e53e3e'};border-radius:4px"></div>
+            </div>
+            <div style="font-size:10px;color:#718096;margin-top:2px">${pct}%</div>
+          </td>
+        </tr>`;
+      });
+      html2 += '</tbody></table></div>';
+      document.getElementById('pai-colaboradores').innerHTML = html2;
+    }
+
+  } catch(e) {
+    document.getElementById('pai-fornecedores').innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>Erro: ${e.message}</p></div>`;
+  }
+}
+
 // ===== TABS =====
 function showTab(t,el){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   el.classList.add('active');
+  if(t==='painel')renderPainel();
   if(t==='entrada')renderEntradas();
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
