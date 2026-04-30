@@ -615,29 +615,67 @@ table.tbl tbody tr:hover{background:#fafbfc}
 
 <!-- ========== FINANCEIRO ========== -->
 <div id="tab-financeiro" class="section">
+
+  <!-- Filtros -->
   <div class="card">
     <div class="card-title">Filtros</div>
     <div class="filters">
       <div class="field"><label>Mês</label><input type="month" id="fin-mes"></div>
+      <div class="field"><label>Fornecedor</label>
+        <select id="fin-fil-forn">
+          <option value="">Todos</option>
+          <option>Gráfica Cristina</option><option>IPE</option><option>Mix</option>
+          <option>Alcalima</option><option>Favorita</option><option>Sorria</option>
+        </select>
+      </div>
       <button class="btn-filter" onclick="renderFinanceiro()">Filtrar</button>
     </div>
   </div>
 
-  <div class="sec-label">💰 A Receber das Gráficas</div>
-  <div class="rec-painel">
-    <div class="rec-box pendente"><label>⏳ A Receber</label><div class="val" id="fin-rec-pend">R$ 0,00</div><div class="sub" id="fin-rec-pend-n">0 romaneios</div></div>
-    <div class="rec-box recebido"><label>✅ Recebido</label><div class="val" id="fin-rec-ok">R$ 0,00</div><div class="sub" id="fin-rec-ok-n">0 romaneios</div></div>
-    <div class="rec-box total"><label>Total Período</label><div class="val" id="fin-rec-tot">R$ 0,00</div><div class="sub" id="fin-rec-tot-n">0 romaneios</div></div>
+  <!-- ===== A RECEBER DAS GRÁFICAS ===== -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:0 0 10px;padding-left:2px">
+    💰 A Receber das Gráficas
   </div>
-  <div class="card" id="fin-rec-card"></div>
 
-  <div class="sec-label">💸 A Pagar para Colaboradores</div>
-  <div class="painel" style="grid-template-columns:repeat(3,1fr)">
-    <div class="painel-box"><label>A Pagar</label><div class="val" id="fin-pag-pend">R$ 0,00</div></div>
-    <div class="painel-box"><label>Pago</label><div class="val" id="fin-pag-ok">R$ 0,00</div></div>
-    <div class="painel-box dest"><label>Total Produção</label><div class="val" id="fin-pag-tot">R$ 0,00</div></div>
+  <div class="painel" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+    <div class="p-box"><label>⏳ A Receber</label><div class="val" id="fin-rec-pend">R$ 0,00</div><div class="sub" id="fin-rec-pend-n">—</div></div>
+    <div class="p-box"><label>✅ Recebido</label><div class="val" id="fin-rec-ok">R$ 0,00</div><div class="sub" id="fin-rec-ok-n">—</div></div>
+    <div class="p-box"><label>🚨 Vencendo em 3 dias</label><div class="val" id="fin-rec-alert" style="color:#e53e3e">R$ 0,00</div><div class="sub" id="fin-rec-alert-n">—</div></div>
+    <div class="p-box dark"><label>Total Período</label><div class="val" id="fin-rec-tot">R$ 0,00</div><div class="sub" id="fin-rec-tot-n">—</div></div>
   </div>
-  <div class="card" id="fin-pag-card"></div>
+
+  <!-- Alertas de vencimento -->
+  <div id="fin-alertas-pag" style="margin-bottom:14px"></div>
+
+  <div class="card">
+    <div class="card-title">Romaneios — A Receber</div>
+    <div id="fin-rec-card"><div class="empty-state"><div class="ico">💰</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- ===== A PAGAR COLABORADORES ===== -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    💸 A Pagar para Colaboradores
+  </div>
+
+  <div class="painel" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+    <div class="p-box"><label>💸 A Pagar</label><div class="val" id="fin-pag-pend">R$ 0,00</div><div class="sub" id="fin-pag-pend-n">—</div></div>
+    <div class="p-box"><label>✅ Pago</label><div class="val" id="fin-pag-ok">R$ 0,00</div><div class="sub" id="fin-pag-ok-n">—</div></div>
+    <div class="p-box dark"><label>Total Produção</label><div class="val" id="fin-pag-tot">R$ 0,00</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Por Colaborador</div>
+    <div id="fin-pag-card"><div class="empty-state"><div class="ico">💸</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- Condições de pagamento por fornecedor -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    📅 Condições de Pagamento por Fornecedor
+  </div>
+  <div class="card">
+    <div id="fin-cond-card"><div class="empty-state"><div class="ico">📅</div><p>Carregando...</p></div></div>
+  </div>
+
 </div>
 
 <!-- ========== HISTÓRICO ========== -->
@@ -1707,73 +1745,270 @@ async function confOkRapido(devId) {
 }
 
 // ===== FINANCEIRO =====
-async function renderFinanceiro(){
-  const mes=document.getElementById('fin-mes').value;
-  // Recebimentos das gráficas
-  let p='?order=data_romaneio.desc';
-  if(mes){const[a,m]=mes.split('-');const ul=new Date(+a,+m,0).getDate();p+=`&data_romaneio=gte.${mes}-01&data_romaneio=lte.${mes}-${ul}`}
-  try{
-    const recs=await sbGet('recebimentos',p);
-    const pend=recs.filter(r=>!r.recebido);const ok=recs.filter(r=>r.recebido);
-    const vPend=pend.reduce((s,r)=>s+(r.valor_total||0),0);
-    const vOk=ok.reduce((s,r)=>s+(r.valor_total||0),0);
-    const vTot=recs.reduce((s,r)=>s+(r.valor_total||0),0);
-    document.getElementById('fin-rec-pend').textContent='R$ '+vPend.toFixed(2).replace('.',',');
-    document.getElementById('fin-rec-ok').textContent='R$ '+vOk.toFixed(2).replace('.',',');
-    document.getElementById('fin-rec-tot').textContent='R$ '+vTot.toFixed(2).replace('.',',');
-    document.getElementById('fin-rec-pend-n').textContent=pend.length+' romaneios';
-    document.getElementById('fin-rec-ok-n').textContent=ok.length+' romaneios';
-    document.getElementById('fin-rec-tot-n').textContent=recs.length+' romaneios';
-    if(!recs.length){document.getElementById('fin-rec-card').innerHTML='<div class="empty-state"><div class="ico">💰</div><p>Nenhum registro encontrado.</p></div>';return}
-    let html=`<table class="tbl"><thead><tr><th>Data</th><th>Cliente</th><th style="text-align:right">Total</th><th style="text-align:center">Status</th><th style="text-align:center">Marcar</th></tr></thead><tbody>`;
-    recs.forEach(r=>{
-      const dt=r.data_romaneio?r.data_romaneio.split('-').reverse().join('/'):'—';
-      html+=`<tr style="${r.recebido?'opacity:.6':''}">
-        <td data-label="Data">${dt}</td>
-        <td data-label="Cliente">${r.nome_cliente||r.cliente}</td>
-        <td data-label="Total" style="text-align:right;font-weight:700;color:${r.recebido?'#276749':'#92400e'}">R$ ${(r.valor_total||0).toFixed(2).replace('.',',')}</td>
-        <td data-label="Status" style="text-align:center"><span class="badge ${r.recebido?'b-conferido':'b-pendente'}">${r.recebido?'✅ Recebido':'⏳ Pendente'}</span></td>
-        <td data-label="Marcar" style="text-align:center"><label class="toggle-rec"><input type="checkbox" ${r.recebido?'checked':''} onchange="toggleRec(${r.id},this.checked)"><span style="font-size:11px">${r.recebido?'Recebido':'Marcar'}</span></label></td>
-      </tr>`;
-    });
-    html+='</tbody></table>';document.getElementById('fin-rec-card').innerHTML=html;
-  }catch(e){}
+function calcVencimento(condicao, dataRomaneio) {
+  // Tenta calcular próxima data de vencimento baseada na condição
+  if (!condicao) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const c = condicao.toLowerCase();
 
-  // Pagamentos colaboradores
-  try{
-    let pd='?order=created_at.desc';
-    if(mes){const[a,m]=mes.split('-');const ul=new Date(+a,+m,0).getDate();pd+=`&data_devolucao=gte.${mes}-01&data_devolucao=lte.${mes}-${ul}`}
-    const devs=await sbGet('devolucoes',pd+'&conferido=eq.true');
-    // Agrupa por colaborador
-    const porColab={};
-    for(const d of devs){
-      const dist=await sbGet('distribuicoes',`?id=eq.${d.distribuicao_id}`);
-      const nome=dist[0]?.colaborador_nome||'Desconhecido';
-      if(!porColab[nome])porColab[nome]={nome,total:0,qtde:0,pago:false};
-      porColab[nome].total+=d.valor_a_pagar||0;
-      porColab[nome].qtde+=d.qtde_devolvida||0;
-    }
-    const lista=Object.values(porColab);
-    const totPag=lista.reduce((s,c)=>s+c.total,0);
-    document.getElementById('fin-pag-pend').textContent='R$ '+totPag.toFixed(2).replace('.',',');
-    document.getElementById('fin-pag-ok').textContent='R$ 0,00';
-    document.getElementById('fin-pag-tot').textContent='R$ '+totPag.toFixed(2).replace('.',',');
-    if(!lista.length){document.getElementById('fin-pag-card').innerHTML='<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento pendente.</p></div>';return}
-    let html2=`<table class="tbl"><thead><tr><th>Colaborador</th><th style="text-align:right">Qtde Produzida</th><th style="text-align:right">Total a Pagar</th></tr></thead><tbody>`;
-    lista.forEach(c=>{
-      const colab=colaboradores.find(x=>x.nome===c.nome);
-      const tipo=colab?.tipo||'rua';
-      html2+=`<tr><td data-label="Colaborador"><span class="badge b-${tipo}">${c.nome}</span></td><td data-label="Qtde" style="text-align:right;font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td><td data-label="Total" style="text-align:right;font-weight:800;color:#276749">R$ ${c.total.toFixed(2).replace('.',',')}</td></tr>`;
-    });
-    html2+='</tbody></table>';document.getElementById('fin-pag-card').innerHTML=html2;
-  }catch(e){}
+  let venc = null;
+
+  // "toda segunda-feira"
+  if (c.includes('segunda')) {
+    venc = new Date(hoje);
+    const dia = venc.getDay(); // 0=dom, 1=seg
+    const diff = dia === 1 ? 7 : (8 - dia) % 7 || 7;
+    venc.setDate(venc.getDate() + diff);
+  }
+  // "toda quinta" ou "5º dia útil"
+  else if (c.includes('quinta') || c.includes('5º dia útil') || c.includes('5o dia')) {
+    venc = new Date(hoje);
+    const dia = venc.getDay();
+    const diff = dia === 4 ? 7 : (11 - dia) % 7 || 7;
+    venc.setDate(venc.getDate() + diff);
+  }
+  // "X dias após retirada"
+  else if (c.match(/(\d+)\s*dias?\s*ap[oó]s/i) && dataRomaneio) {
+    const match = c.match(/(\d+)\s*dias?\s*ap[oó]s/i);
+    const dias = parseInt(match[1]);
+    venc = new Date(dataRomaneio + 'T00:00:00');
+    venc.setDate(venc.getDate() + dias);
+  }
+
+  if (!venc) return null;
+
+  const diff = Math.round((venc - hoje) / (1000*60*60*24));
+  return { data: venc.toLocaleDateString('pt-BR'), diff };
 }
 
-async function toggleRec(id,recebido){
-  try{
-    await sbPatch('recebimentos',id,{recebido,data_recebimento:recebido?new Date().toISOString().split('T')[0]:null});
+function vencBadge(v) {
+  if (!v) return '<span style="font-size:11px;color:#718096">—</span>';
+  if (v.diff < 0)  return `<span class="prazo-atrasado">🔴 Venceu há ${Math.abs(v.diff)}d (${v.data})</span>`;
+  if (v.diff === 0) return `<span class="prazo-urgente">🚨 HOJE (${v.data})</span>`;
+  if (v.diff <= 3)  return `<span class="prazo-urgente">🔴 ${v.diff}d — ${v.data}</span>`;
+  if (v.diff <= 7)  return `<span class="prazo-alerta">🟡 ${v.diff}d — ${v.data}</span>`;
+  return `<span class="prazo-ok">🟢 ${v.diff}d — ${v.data}</span>`;
+}
+
+async function renderFinanceiro() {
+  const mes  = document.getElementById('fin-mes').value;
+  const forn = document.getElementById('fin-fil-forn').value;
+
+  // ===== A RECEBER =====
+  let p = '?order=data_romaneio.desc';
+  if (mes)  { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); p += `&data_romaneio=gte.${mes}-01&data_romaneio=lte.${mes}-${ul}`; }
+  if (forn) p += `&cliente=eq.${encodeURIComponent(forn)}`;
+
+  try {
+    const recs  = await sbGet('recebimentos', p);
+    const pend  = recs.filter(r => !r.recebido);
+    const ok    = recs.filter(r => r.recebido);
+    const vPend = pend.reduce((s,r) => s+(r.valor_total||0), 0);
+    const vOk   = ok.reduce((s,r)   => s+(r.valor_total||0), 0);
+    const vTot  = recs.reduce((s,r) => s+(r.valor_total||0), 0);
+
+    // Carrega condições de pagamento
+    const conds = await sbGet('condicoes_pagamento', '');
+    const condMap = {};
+    (conds||[]).forEach(c => condMap[c.fornecedor] = c.condicao);
+
+    // Calcula alertas de vencimento
+    let vAlert = 0, nAlert = 0;
+    const alertas = [];
+    pend.forEach(r => {
+      const cond = condMap[r.nome_cliente||r.cliente] || r.condicao_pagamento || '';
+      const v = calcVencimento(cond, r.data_romaneio);
+      if (v && v.diff <= 3) {
+        vAlert += r.valor_total || 0;
+        nAlert++;
+        alertas.push({ nome: r.nome_cliente||r.cliente, valor: r.valor_total||0, cond, venc: v });
+      }
+    });
+
+    document.getElementById('fin-rec-pend').textContent   = 'R$ ' + vPend.toFixed(2).replace('.',',');
+    document.getElementById('fin-rec-pend-n').textContent = pend.length + ' romaneios';
+    document.getElementById('fin-rec-ok').textContent     = 'R$ ' + vOk.toFixed(2).replace('.',',');
+    document.getElementById('fin-rec-ok-n').textContent   = ok.length + ' romaneios';
+    document.getElementById('fin-rec-alert').textContent  = 'R$ ' + vAlert.toFixed(2).replace('.',',');
+    document.getElementById('fin-rec-alert-n').textContent = nAlert + ' romaneios';
+    document.getElementById('fin-rec-tot').textContent    = 'R$ ' + vTot.toFixed(2).replace('.',',');
+    document.getElementById('fin-rec-tot-n').textContent  = recs.length + ' romaneios';
+
+    // Alertas visuais
+    const alertasEl = document.getElementById('fin-alertas-pag');
+    if (alertas.length) {
+      let ah = '';
+      alertas.forEach(a => {
+        ah += `<div style="background:#fff5f5;border:1.5px solid #feb2b2;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-weight:700;color:#c53030">🚨 ${a.nome}</span>
+            <span style="font-size:11px;color:#718096;margin-left:8px">${a.cond}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-weight:700;color:#c53030">R$ ${a.valor.toFixed(2).replace('.',',')}</span>
+            ${vencBadge(a.venc)}
+          </div>
+        </div>`;
+      });
+      alertasEl.innerHTML = ah;
+    } else {
+      alertasEl.innerHTML = '';
+    }
+
+    // Tabela de romaneios
+    if (!recs.length) {
+      document.getElementById('fin-rec-card').innerHTML = '<div class="empty-state"><div class="ico">💰</div><p>Nenhum registro encontrado.</p></div>';
+    } else {
+      let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Data</th><th>Fornecedor</th><th class="r">Total</th>
+        <th>Cond. Pagamento</th><th>Próx. Vencimento</th>
+        <th style="text-align:center">Status</th><th style="text-align:center">Marcar</th>
+      </tr></thead><tbody>`;
+
+      recs.forEach(r => {
+        const dt   = r.data_romaneio ? r.data_romaneio.split('-').reverse().join('/') : '—';
+        const nome = r.nome_cliente || r.cliente;
+        const cond = condMap[nome] || '—';
+        const venc = r.recebido ? null : calcVencimento(cond, r.data_romaneio);
+        const statusBadge = r.recebido
+          ? '<span class="badge bg-green">✅ Recebido</span>'
+          : '<span class="badge bg-yellow">⏳ Pendente</span>';
+
+        html += `<tr style="${r.recebido?'opacity:.6':''}">
+          <td>${dt}</td>
+          <td><strong>${nome}</strong></td>
+          <td class="r" style="font-weight:700;color:${r.recebido?'#276749':'#92400e'}">R$ ${(r.valor_total||0).toFixed(2).replace('.',',')}</td>
+          <td style="font-size:11px;color:#718096">${cond}</td>
+          <td>${r.recebido ? '<span class="prazo-entregue">✅ Recebido</span>' : vencBadge(venc)}</td>
+          <td style="text-align:center">${statusBadge}</td>
+          <td style="text-align:center">
+            <label class="toggle-rec">
+              <input type="checkbox" ${r.recebido?'checked':''} onchange="toggleRec(${r.id},this.checked)">
+              <span style="font-size:11px">${r.recebido?'Recebido':'Marcar'}</span>
+            </label>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('fin-rec-card').innerHTML = html;
+    }
+  } catch(e) { document.getElementById('fin-rec-card').innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+
+  // ===== A PAGAR COLABORADORES =====
+  try {
+    let pd = '?conferido=eq.true&order=created_at.desc';
+    if (mes) { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); pd += `&data_devolucao=gte.${mes}-01&data_devolucao=lte.${mes}-${ul}`; }
+
+    const devs = await sbGet('devolucoes', pd);
+    const totalPag = devs.reduce((s,d) => s+(d.valor_a_pagar||0), 0);
+
+    document.getElementById('fin-pag-pend').textContent    = 'R$ ' + totalPag.toFixed(2).replace('.',',');
+    document.getElementById('fin-pag-pend-n').textContent  = devs.length + ' devoluções';
+    document.getElementById('fin-pag-ok').textContent      = 'R$ 0,00';
+    document.getElementById('fin-pag-ok-n').textContent    = '—';
+    document.getElementById('fin-pag-tot').textContent     = 'R$ ' + totalPag.toFixed(2).replace('.',',');
+
+    if (!devs.length) {
+      document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento no período.</p></div>';
+    } else {
+      // Agrupa por colaborador
+      const porColab = {};
+      for (const d of devs) {
+        const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
+        const distObj = dist[0] || {};
+        const nome = distObj.colaborador_nome || 'Desconhecido';
+        const tipo = distObj.tipo || 'rua';
+
+        // Se for interno com múltiplos, divide igualmente
+        let pessoas = [{ nome, tipo }];
+        if (tipo === 'interno' && distObj.colaboradores_internos) {
+          try {
+            const internos = JSON.parse(distObj.colaboradores_internos);
+            if (internos.length > 1) {
+              pessoas = internos.map(i => ({ nome: i.nome, tipo: 'interno' }));
+            }
+          } catch(e) {}
+        }
+
+        const valorPorPessoa = (d.valor_a_pagar || 0) / pessoas.length;
+        pessoas.forEach(p => {
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0 };
+          porColab[p.nome].total += valorPorPessoa;
+          porColab[p.nome].qtde  += Math.round((d.qtde_aprovada || 0) / pessoas.length);
+          porColab[p.nome].perda += Math.round((d.qtde_perda    || 0) / pessoas.length);
+        });
+      }
+
+      const lista = Object.values(porColab).sort((a,b) => b.total - a.total);
+      let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Colaborador</th><th>Tipo</th>
+        <th class="r">Qtde Produzida</th><th class="r">Perdas</th>
+        <th class="r">Total a Pagar</th>
+      </tr></thead><tbody>`;
+
+      lista.forEach(c => {
+        const tipoBadge = c.tipo === 'interno'
+          ? '<span class="badge bg-purple">🏭 Interno</span>'
+          : '<span class="badge bg-blue">👥 Rua</span>';
+        html += `<tr>
+          <td><strong>${c.nome}</strong></td>
+          <td>${tipoBadge}</td>
+          <td class="r" style="font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td>
+          <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
+          <td class="r" style="font-weight:800;color:#276749;font-size:14px">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+        </tr>`;
+      });
+
+      // Linha total
+      html += `<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
+        <td colspan="4" style="font-weight:700;text-align:right;color:#276749">TOTAL A PAGAR</td>
+        <td class="r" style="font-weight:900;color:#276749;font-size:15px">R$ ${totalPag.toFixed(2).replace('.',',')}</td>
+      </tr>`;
+      html += '</tbody></table></div>';
+      document.getElementById('fin-pag-card').innerHTML = html;
+    }
+  } catch(e) { document.getElementById('fin-pag-card').innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+
+  // ===== CONDIÇÕES DE PAGAMENTO =====
+  try {
+    const conds = await sbGet('condicoes_pagamento', '?order=fornecedor.asc');
+    if (!conds.length) {
+      document.getElementById('fin-cond-card').innerHTML = '<div class="empty-state"><div class="ico">📅</div><p>Nenhuma condição cadastrada.</p></div>';
+    } else {
+      let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Fornecedor</th><th>Condição de Pagamento</th><th>Próx. Vencimento</th><th>Ações</th>
+      </tr></thead><tbody>`;
+      conds.forEach(c => {
+        const venc = calcVencimento(c.condicao, null);
+        html += `<tr>
+          <td><strong>${c.fornecedor}</strong></td>
+          <td style="color:#4a5568">${c.condicao}</td>
+          <td>${vencBadge(venc)}</td>
+          <td>
+            <button onclick="editarCond(${c.id},'${c.fornecedor}','${c.condicao}')"
+              style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px">✏️ Editar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('fin-cond-card').innerHTML = html;
+    }
+  } catch(e) {}
+}
+
+function editarCond(id, forn, cond) {
+  const nova = prompt(`Condição de pagamento para ${forn}:`, cond);
+  if (!nova || nova === cond) return;
+  sbPatch('condicoes_pagamento', id, { condicao: nova })
+    .then(() => { alerta('Condição atualizada!', 'success'); renderFinanceiro(); })
+    .catch(e => alerta('Erro: ' + e.message, 'error'));
+}
+
+async function toggleRec(id, recebido) {
+  try {
+    await sbPatch('recebimentos', id, { recebido, data_recebimento: recebido ? new Date().toISOString().split('T')[0] : null });
     renderFinanceiro();
-  }catch(e){alerta('Erro: '+e.message,'error')}
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
 // ===== HISTÓRICO =====
