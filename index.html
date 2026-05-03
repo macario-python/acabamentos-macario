@@ -788,7 +788,12 @@ const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'ap
 
 // ===== SUPABASE =====
 async function sbGet(t,p=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}${p}`,{headers:H});if(!r.ok)throw new Error('Erro ao carregar');return r.json()}
-async function sbPost(t,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)});return r.json()}
+async function sbPost(t,b){
+  const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)});
+  const data=await r.json();
+  if(!r.ok) throw new Error(`API erro ${r.status}: ${JSON.stringify(data)}`);
+  return data;
+}
 async function sbPatch(t,id,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});return r.json()}
 async function sbDelete(t,id){await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H})}
 async function sbUpsert(t,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});return r.json()}
@@ -820,11 +825,12 @@ window.onload=async()=>{
   document.getElementById('inp-data').value=hoje;
   document.getElementById('ent-data').value = hoje;
   document.getElementById('dist-data').value = hoje;
-  document.getElementById('conf-data').value=hoje;
-  document.getElementById('ent-fil-mes').value=mes;
-  document.getElementById('dist-fil-mes').value=mes;
-  document.getElementById('fin-mes').value=mes;
-  document.getElementById('hist-mes').value=mes;
+  document.getElementById('conf-data').value = hoje;
+  // Entrada não filtra por mês por padrão — mostra tudo
+  document.getElementById('ent-fil-mes').value = '';
+  document.getElementById('dist-fil-mes').value = mes;
+  document.getElementById('fin-mes').value = mes;
+  document.getElementById('hist-mes').value = mes;
   await carregarConfig();
   await carregarColaboradores();
   addItem();
@@ -962,7 +968,7 @@ async function renderPainel() {
         porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
         porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
         porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
-        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro_receber||0);
+        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro||0);
       });
 
       let html = '';
@@ -1353,7 +1359,7 @@ async function salvarEntrada() {
       fornecedor: forn, data_entrada: data, data_prazo: prazo,
       condicao_pagamento: cond, tipo_sacola: tipo, vias, acabamento: acab,
       modelo, qtde_total: qtde, qtde_disponivel: qtde,
-      valor_milheiro_receber: vlr, observacao: obs, status: 'aberto'
+      valor_milheiro: vlr, observacao: obs, status: 'aberto'
     });
 
     // Salva/atualiza condição de pagamento do fornecedor
@@ -1387,7 +1393,6 @@ async function renderEntradas() {
     const ul = new Date(+a, +m, 0).getDate();
     p += `&data_entrada=gte.${mes}-01&data_entrada=lte.${mes}-${ul}`;
   }
-
   try {
     const lista = await sbGet('entradas', p);
     if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
@@ -1416,7 +1421,7 @@ async function renderEntradas() {
         <td class="r" style="color:${(e.qtde_disponivel||0)>0?'#276749':'#718096'}">${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#2b6cb0">${naRua.toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(e.qtde_feita||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(e.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td style="white-space:nowrap">${prazoInfo.html}</td>
         <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
         <td>${statusBadge}</td>
@@ -1442,19 +1447,28 @@ async function carregarEntradasSelect() {
     const lista = await sbGet('entradas', '?status=neq.concluido&order=data_prazo.asc,id.desc');
     const sel = document.getElementById('dist-entrada');
     sel.innerHTML = '<option value="">Selecione a entrada...</option>';
+
+    if (!lista.length) {
+      sel.innerHTML = '<option value="">Nenhuma entrada com saldo disponível</option>';
+      return;
+    }
+
     lista.forEach(e => {
-      if ((e.qtde_disponivel || 0) <= 0) return;
       const o = document.createElement('option');
       o.value = e.id;
       const dt = e.data_entrada ? e.data_entrada.split('-').reverse().join('/') : '';
       const prazo = e.data_prazo ? e.data_prazo.split('-').reverse().join('/') : '';
       const tipo = [e.tipo_sacola, e.vias].filter(Boolean).join(' ');
-      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${(e.qtde_disponivel||0).toLocaleString('pt-BR')} | Prazo: ${prazo}`;
-      o.dataset.saldo = e.qtde_disponivel;
+      const saldo = e.qtde_disponivel || 0;
+      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${saldo.toLocaleString('pt-BR')} | Prazo: ${prazo}`;
+      o.dataset.saldo = saldo;
       o.dataset.entradaObj = JSON.stringify(e);
+      // Mostra todas, mesmo saldo zero (para não esconder)
       sel.appendChild(o);
     });
-  } catch(e) {}
+  } catch(e) {
+    alerta('Erro ao carregar entradas: ' + e.message, 'error');
+  }
 }
 
 function onDistEntradaChange() {
