@@ -1524,6 +1524,8 @@ function calcDataPagPadrao() {
   if (!campo.value) campo.value = padrao;
   info.textContent = `Padrão: 15/${String(mesAdj).padStart(2,'0')}/${ano}`;
 }
+
+function calcDistValor() {
   const sel = document.getElementById('dist-servico');
   const opt = sel.options[sel.selectedIndex];
   document.getElementById('dist-vlr').value = opt?.dataset?.vlr || 0;
