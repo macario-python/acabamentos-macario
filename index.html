@@ -436,12 +436,12 @@ table.tbl tbody tr:hover{background:#fafbfc}
       </div>
       <div class="field">
         <label>Data Saída <span class="req">*</span></label>
-        <input type="date" id="dist-data">
+        <input type="date" id="dist-data" onchange="calcDataPagPadrao()">
       </div>
       <div class="field">
-        <label>Qtde Enviada <span class="req">*</span></label>
-        <input type="number" id="dist-qtde" placeholder="0" min="0" oninput="calcDistTotal()">
-        <span id="dist-saldo-info" style="font-size:10px;color:#718096;margin-top:2px"></span>
+        <label>Data Pagamento</label>
+        <input type="date" id="dist-data-pag" placeholder="Deixe vazio para padrão (dia 15 do mês seguinte)">
+        <span style="font-size:10px;color:#718096;margin-top:2px" id="dist-pag-info">Padrão: dia 15 do mês seguinte</span>
       </div>
     </div>
 
@@ -1496,7 +1496,34 @@ function onDistTipoChange() {
   }
 }
 
-function calcDistValor() {
+function calcPrazoPag(dataPag) {
+  if (!dataPag) return '<span style="font-size:11px;color:#718096">—</span>';
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const d = new Date(dataPag + 'T00:00:00');
+  const diff = Math.round((d - hoje)/(1000*60*60*24));
+  const fmt = dataPag.split('-').reverse().join('/');
+  if (diff < 0)  return `<span class="prazo-atrasado">🔴 Atrasado ${Math.abs(diff)}d (${fmt})</span>`;
+  if (diff === 0) return `<span class="prazo-urgente">🚨 HOJE (${fmt})</span>`;
+  if (diff <= 3)  return `<span class="prazo-urgente">🔴 ${diff}d — ${fmt}</span>`;
+  if (diff <= 7)  return `<span class="prazo-alerta">🟡 ${diff}d — ${fmt}</span>`;
+  return `<span class="prazo-ok">🟢 ${diff}d — ${fmt}</span>`;
+}
+
+function calcDataPagPadrao() {
+  const data = document.getElementById('dist-data').value;
+  const info = document.getElementById('dist-pag-info');
+  if (!data) return;
+  // Dia 15 do mês seguinte
+  const d = new Date(data + 'T00:00:00');
+  const mes = d.getMonth() + 2; // próximo mês (0-based +2)
+  const ano = mes > 12 ? d.getFullYear() + 1 : d.getFullYear();
+  const mesAdj = mes > 12 ? 1 : mes;
+  const padrao = `${ano}-${String(mesAdj).padStart(2,'0')}-15`;
+  // Só preenche se estiver vazio
+  const campo = document.getElementById('dist-data-pag');
+  if (!campo.value) campo.value = padrao;
+  info.textContent = `Padrão: 15/${String(mesAdj).padStart(2,'0')}/${ano}`;
+}
   const sel = document.getElementById('dist-servico');
   const opt = sel.options[sel.selectedIndex];
   document.getElementById('dist-vlr').value = opt?.dataset?.vlr || 0;
@@ -1632,13 +1659,23 @@ async function salvarDistribuicao() {
   }
 
   try {
+    // Data de pagamento — padrão dia 15 do mês seguinte
+    const dataPag = document.getElementById('dist-data-pag').value || (() => {
+      const d = new Date(data + 'T00:00:00');
+      const mes = d.getMonth() + 2;
+      const ano = mes > 12 ? d.getFullYear() + 1 : d.getFullYear();
+      const mesAdj = mes > 12 ? 1 : mes;
+      return `${ano}-${String(mesAdj).padStart(2,'0')}-15`;
+    })();
+
     // Salva distribuição
     await sbPost('distribuicoes', {
       entrada_id: parseInt(entId), tipo, colaborador_id: colaboradorId,
       colaborador_nome: colaboradorNome,
       colaboradores_internos: tipo === 'interno' ? JSON.stringify(colaboradoresInternos) : null,
       data_saida: data, qtde_enviada: qtde, servico,
-      valor_milheiro_pagar: vlr, status: 'pendente'
+      valor_milheiro_pagar: vlr, status: 'pendente',
+      data_pagamento: dataPag
     });
 
     // Baixa saldo da entrada
@@ -2163,11 +2200,17 @@ async function renderFinanceiro() {
         }
 
         const valorPorPessoa = (d.valor_a_pagar || 0) / pessoas.length;
+        // Pega data_pagamento da distribuição
+        const dataPag = distObj.data_pagamento || null;
         pessoas.forEach(p => {
-          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0 };
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, dataPag: dataPag };
           porColab[p.nome].total += valorPorPessoa;
           porColab[p.nome].qtde  += Math.round((d.qtde_aprovada || 0) / pessoas.length);
           porColab[p.nome].perda += Math.round((d.qtde_perda    || 0) / pessoas.length);
+          // Mantém a data mais próxima
+          if (dataPag && (!porColab[p.nome].dataPag || dataPag < porColab[p.nome].dataPag)) {
+            porColab[p.nome].dataPag = dataPag;
+          }
         });
       }
 
@@ -2175,19 +2218,22 @@ async function renderFinanceiro() {
       let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Colaborador</th><th>Tipo</th>
         <th class="r">Qtde Produzida</th><th class="r">Perdas</th>
-        <th class="r">Total a Pagar</th>
+        <th class="r">Total a Pagar</th><th>Dt Pagamento</th>
       </tr></thead><tbody>`;
 
       lista.forEach(c => {
         const tipoBadge = c.tipo === 'interno'
           ? '<span class="badge bg-purple">🏭 Interno</span>'
           : '<span class="badge bg-blue">👥 Rua</span>';
+        const vencPag = c.dataPag ? calcVencimento(null, null, c.dataPag) : null;
+        const dtPagFmt = c.dataPag ? c.dataPag.split('-').reverse().join('/') : '—';
         html += `<tr>
           <td><strong>${c.nome}</strong></td>
           <td>${tipoBadge}</td>
           <td class="r" style="font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
           <td class="r" style="font-weight:800;color:#276749;font-size:14px">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+          <td style="white-space:nowrap">${calcPrazoPag(c.dataPag)}</td>
         </tr>`;
       });
 
