@@ -820,11 +820,12 @@ window.onload=async()=>{
   document.getElementById('inp-data').value=hoje;
   document.getElementById('ent-data').value = hoje;
   document.getElementById('dist-data').value = hoje;
-  document.getElementById('conf-data').value=hoje;
-  document.getElementById('ent-fil-mes').value=mes;
-  document.getElementById('dist-fil-mes').value=mes;
-  document.getElementById('fin-mes').value=mes;
-  document.getElementById('hist-mes').value=mes;
+  document.getElementById('conf-data').value = hoje;
+  // Entrada não filtra por mês por padrão — mostra tudo
+  document.getElementById('ent-fil-mes').value = '';
+  document.getElementById('dist-fil-mes').value = mes;
+  document.getElementById('fin-mes').value = mes;
+  document.getElementById('hist-mes').value = mes;
   await carregarConfig();
   await carregarColaboradores();
   addItem();
@@ -1387,7 +1388,6 @@ async function renderEntradas() {
     const ul = new Date(+a, +m, 0).getDate();
     p += `&data_entrada=gte.${mes}-01&data_entrada=lte.${mes}-${ul}`;
   }
-
   try {
     const lista = await sbGet('entradas', p);
     if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
@@ -1442,19 +1442,28 @@ async function carregarEntradasSelect() {
     const lista = await sbGet('entradas', '?status=neq.concluido&order=data_prazo.asc,id.desc');
     const sel = document.getElementById('dist-entrada');
     sel.innerHTML = '<option value="">Selecione a entrada...</option>';
+
+    if (!lista.length) {
+      sel.innerHTML = '<option value="">Nenhuma entrada com saldo disponível</option>';
+      return;
+    }
+
     lista.forEach(e => {
-      if ((e.qtde_disponivel || 0) <= 0) return;
       const o = document.createElement('option');
       o.value = e.id;
       const dt = e.data_entrada ? e.data_entrada.split('-').reverse().join('/') : '';
       const prazo = e.data_prazo ? e.data_prazo.split('-').reverse().join('/') : '';
       const tipo = [e.tipo_sacola, e.vias].filter(Boolean).join(' ');
-      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${(e.qtde_disponivel||0).toLocaleString('pt-BR')} | Prazo: ${prazo}`;
-      o.dataset.saldo = e.qtde_disponivel;
+      const saldo = e.qtde_disponivel || 0;
+      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${saldo.toLocaleString('pt-BR')} | Prazo: ${prazo}`;
+      o.dataset.saldo = saldo;
       o.dataset.entradaObj = JSON.stringify(e);
+      // Mostra todas, mesmo saldo zero (para não esconder)
       sel.appendChild(o);
     });
-  } catch(e) {}
+  } catch(e) {
+    alerta('Erro ao carregar entradas: ' + e.message, 'error');
+  }
 }
 
 function onDistEntradaChange() {
