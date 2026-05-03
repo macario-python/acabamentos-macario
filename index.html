@@ -231,6 +231,7 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="tab" onclick="showTab('distribuicao',this)">🔀 Distribuição</div>
   <div class="tab" onclick="showTab('conferencia',this)">✅ Conferência</div>
   <div class="tab" onclick="showTab('financeiro',this)">💰 Financeiro</div>
+  <div class="tab" onclick="showTab('colaboradores',this)">👥 Colaboradores</div>
   <div class="tab" onclick="showTab('historico',this)">🕐 Histórico</div>
 </div>
 
@@ -710,6 +711,33 @@ table.tbl tbody tr:hover{background:#fafbfc}
 
 </div>
 
+<!-- ========== COLABORADORES ========== -->
+<div id="tab-colaboradores" class="section">
+  <div class="card">
+    <div class="card-title">Novo Colaborador</div>
+    <div class="g3">
+      <div class="field"><label>Nome <span class="req">*</span></label>
+        <input type="text" id="col-nome" placeholder="Nome completo"></div>
+      <div class="field"><label>Tipo <span class="req">*</span></label>
+        <select id="col-tipo">
+          <option value="">Selecione...</option>
+          <option value="interno">🏭 Interno</option>
+          <option value="rua">👥 Rua</option>
+        </select></div>
+      <div class="field"><label>Telefone</label>
+        <input type="text" id="col-tel" placeholder="WhatsApp"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-save" onclick="salvarColaborador()">💾 Cadastrar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Colaboradores Cadastrados</div>
+    <div id="col-lista"><div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div></div>
+  </div>
+</div>
+
 <!-- ========== HISTÓRICO ========== -->
 <div id="tab-historico" class="section">
   <div class="card">
@@ -864,25 +892,39 @@ function atualizarHeaderPix(){
 
 async function carregarColaboradores(){
   try{
-    colaboradores=await sbGet('colaboradores','?ativo=eq.true&order=tipo.asc,nome.asc');
-    const sel=document.getElementById('dist-colaborador');
-    const selFil=document.getElementById('dist-fil-colab');
-    const confSel=document.getElementById('conf-dist');
-    // Limpa e repopula
-    sel.innerHTML='<option value="">Selecione...</option>';
-    selFil.innerHTML='<option value="">Todos</option>';
-    let grpInt=document.createElement('optgroup');grpInt.label='Internos';
-    let grpRua=document.createElement('optgroup');grpRua.label='Rua';
-    colaboradores.forEach(c=>{
-      const o=document.createElement('option');
-      o.value=c.id;o.textContent=c.nome;o.dataset.tipo=c.tipo;
-      if(c.tipo==='interno')grpInt.appendChild(o);
-      else grpRua.appendChild(o.cloneNode(true));
-      const of=document.createElement('option');of.value=c.id;of.textContent=c.nome;
-      selFil.appendChild(of);
+    colaboradores = await sbGet('colaboradores','?ativo=eq.true&order=tipo.asc,nome.asc');
+    const sel = document.getElementById('dist-colaborador');
+    const selFil = document.getElementById('dist-fil-colab');
+
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    if (selFil) selFil.innerHTML = '<option value="">Todos</option>';
+
+    let grpInt = document.createElement('optgroup'); grpInt.label = '🏭 Internos';
+    let grpRua = document.createElement('optgroup'); grpRua.label = '👥 Rua';
+
+    colaboradores.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.nome; o.dataset.tipo = c.tipo; o.dataset.nome = c.nome;
+
+      if (c.tipo === 'interno') {
+        grpInt.appendChild(o);
+      } else {
+        grpRua.appendChild(o);
+      }
+
+      if (selFil) {
+        const of = document.createElement('option');
+        of.value = c.id; of.textContent = c.nome;
+        selFil.appendChild(of);
+      }
     });
-    sel.appendChild(grpInt);sel.appendChild(grpRua);
-  }catch(e){}
+
+    if (grpInt.children.length > 0) sel.appendChild(grpInt);
+    if (grpRua.children.length > 0) sel.appendChild(grpRua);
+
+  } catch(e) {
+    alerta('Erro ao carregar colaboradores: ' + e.message, 'error');
+  }
 }
 
 // ===== PAINEL GERAL =====
@@ -1081,7 +1123,84 @@ function showTab(t,el){
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
   if(t==='financeiro')renderFinanceiro();
+  if(t==='colaboradores')renderColaboradores();
   if(t==='historico')renderHistorico();
+}
+
+// ===== COLABORADORES =====
+async function salvarColaborador() {
+  const nome = document.getElementById('col-nome').value.trim();
+  const tipo = document.getElementById('col-tipo').value;
+  const tel  = document.getElementById('col-tel').value.trim();
+  if (!nome) { alerta('Informe o nome!', 'error'); return; }
+  if (!tipo) { alerta('Selecione o tipo!', 'error'); return; }
+  try {
+    await sbPost('colaboradores', { nome, tipo, telefone: tel, ativo: true });
+    alerta('Colaborador cadastrado!', 'success');
+    document.getElementById('col-nome').value = '';
+    document.getElementById('col-tipo').value = '';
+    document.getElementById('col-tel').value = '';
+    await carregarColaboradores();
+    renderColaboradores();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
+}
+
+async function renderColaboradores() {
+  const el = document.getElementById('col-lista');
+  try {
+    const lista = await sbGet('colaboradores', '?order=tipo.asc,nome.asc');
+    if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">👥</div><p>Nenhum colaborador cadastrado.</p></div>'; return; }
+
+    const internos = lista.filter(c => c.tipo === 'interno');
+    const rua      = lista.filter(c => c.tipo === 'rua');
+
+    let html = '';
+    if (internos.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">🏭 Internos</div>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px">`;
+      internos.forEach(c => {
+        html += `<div style="background:#faf5ff;border:1px solid #e9d8fd;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:600;font-size:13px">${c.nome}</div>
+            ${c.telefone ? `<div style="font-size:11px;color:#718096">${c.telefone}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:4px">
+            <span class="badge bg-purple">Interno</span>
+            <button onclick="toggleAtivo(${c.id},${c.ativo})" style="background:none;border:1px solid ${c.ativo?'#fed7d7':'#c6f6d5'};border-radius:6px;color:${c.ativo?'#e53e3e':'#276749'};padding:2px 7px;cursor:pointer;font-size:10px">${c.ativo?'Desativar':'Ativar'}</button>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    if (rua.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">👥 Rua</div>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">`;
+      rua.forEach(c => {
+        html += `<div style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;${!c.ativo?'opacity:.5':''}">
+          <div>
+            <div style="font-weight:600;font-size:13px">${c.nome}</div>
+            ${c.telefone ? `<div style="font-size:11px;color:#718096">${c.telefone}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:4px">
+            <span class="badge bg-blue">Rua</span>
+            <button onclick="toggleAtivo(${c.id},${c.ativo})" style="background:none;border:1px solid ${c.ativo?'#fed7d7':'#c6f6d5'};border-radius:6px;color:${c.ativo?'#e53e3e':'#276749'};padding:2px 7px;cursor:pointer;font-size:10px">${c.ativo?'Desativar':'Ativar'}</button>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+}
+
+async function toggleAtivo(id, ativo) {
+  try {
+    await sbPatch('colaboradores', id, { ativo: !ativo });
+    await carregarColaboradores();
+    renderColaboradores();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
 // ===== MODALS =====
