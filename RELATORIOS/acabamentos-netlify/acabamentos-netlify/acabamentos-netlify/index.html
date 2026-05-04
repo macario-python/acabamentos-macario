@@ -881,7 +881,9 @@ async function carregarColaboradores(){
     });
     if(grpInt.children.length) sel.appendChild(grpInt);
     if(grpRua.children.length) sel.appendChild(grpRua);
-  }catch(e){console.error('Erro ao carregar colaboradores:',e);}
+    // DEBUG temporário
+    alerta('Colaboradoras carregadas: ' + colaboradores.length + ' | Select: ' + sel.options.length, colaboradores.length > 0 ? 'success' : 'error');
+  }catch(e){alerta('ERRO colaboradores: ' + e.message, 'error');}
 }
 
 // ===== PAINEL GERAL =====
@@ -1022,7 +1024,7 @@ async function renderPainel() {
     } else {
       const porColab = {};
       distribuicoes.forEach(d => {
-        const nome = d.colaborador_nome || '—';
+        const nome = d.colaboradores || '—';
         if (!porColab[nome]) porColab[nome] = { nome, tipo: d.tipo||'rua', enviado: 0, retornado: 0, aprovado: 0, perda: 0, pendente: 0, itens: [] };
         porColab[nome].enviado   += d.qtde_enviada   || 0;
         porColab[nome].retornado += d.qtde_retornada || 0;
@@ -1639,11 +1641,11 @@ async function salvarDistribuicao() {
   try {
     // Salva distribuição
     await sbPost('distribuicoes', {
-      entrada_id: parseInt(entId), tipo, colaborador_id: colaboradorId,
-      colaborador_nome: colaboradorNome,
+      entrada_id: parseInt(entId), tipo,
+      colaboradores: colaboradorNome,
       colaboradores_internos: tipo === 'interno' ? JSON.stringify(colaboradoresInternos) : null,
       data_saida: data, qtde_enviada: qtde, servico,
-      valor_milheiro_pagar: vlr, status: 'pendente',
+      valor_milheiro: vlr, status: 'pendente',
       data_pagamento: document.getElementById('dist-data-pgto').value || null
     });
 
@@ -1701,7 +1703,7 @@ async function renderDistribuicoes() {
 
     lista.forEach(d => {
       const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '—';
-      const total = ((d.valor_milheiro_pagar||0)/1000) * (d.qtde_aprovada||d.qtde_enviada||0);
+      const total = ((d.valor_milheiro||0)/1000) * (d.qtde_aprovada||d.qtde_enviada||0);
       const tipoBadge = d.tipo === 'interno'
         ? '<span class="badge bg-purple">🏭 Interno</span>'
         : '<span class="badge bg-blue">👥 Rua</span>';
@@ -1712,13 +1714,13 @@ async function renderDistribuicoes() {
       html += `<tr>
         <td>${dt}</td>
         <td>${tipoBadge}</td>
-        <td style="font-size:11px">${d.colaborador_nome}</td>
+        <td style="font-size:11px">${d.colaboradores}</td>
         <td style="font-size:11px">${d.servico}</td>
         <td class="r"><strong>${(d.qtde_enviada||0).toLocaleString('pt-BR')}</strong></td>
         <td class="r" style="color:#2b6cb0">${(d.qtde_retornada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(d.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(d.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td class="r" style="font-weight:700;color:#276749">R$ ${total.toFixed(2).replace('.',',')}</td>
         <td>${statusBadge}</td>
       </tr>`;
@@ -1741,7 +1743,7 @@ async function carregarDistribuicoesSelect() {
       o.value = d.id;
       const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '';
       const pendente = (d.qtde_enviada||0) - (d.qtde_retornada||0);
-      o.textContent = `${dt} — ${d.colaborador_nome} — ${d.servico} | Enviado: ${(d.qtde_enviada||0).toLocaleString('pt-BR')} | Pendente: ${pendente.toLocaleString('pt-BR')}`;
+      o.textContent = `${dt} — ${d.colaboradores} — ${d.servico} | Enviado: ${(d.qtde_enviada||0).toLocaleString('pt-BR')} | Pendente: ${pendente.toLocaleString('pt-BR')}`;
       o.dataset.distObj = JSON.stringify(d);
       sel.appendChild(o);
     });
@@ -1776,13 +1778,13 @@ function onConfDistChange() {
   const tipo = confDistAtual.tipo === 'interno' ? '🏭 Interno' : '👥 Rua';
   infoEl.innerHTML = `
     <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <div><span style="color:#4a5568">Colaborador:</span> <strong>${confDistAtual.colaborador_nome}</strong></div>
+      <div><span style="color:#4a5568">Colaborador:</span> <strong>${confDistAtual.colaboradores}</strong></div>
       <div><span style="color:#4a5568">Tipo:</span> <strong>${tipo}</strong></div>
       <div><span style="color:#4a5568">Serviço:</span> <strong>${confDistAtual.servico}</strong></div>
       <div><span style="color:#4a5568">Enviado:</span> <strong>${enviado.toLocaleString('pt-BR')}</strong></div>
       <div><span style="color:#4a5568">Já retornou:</span> <strong style="color:#276749">${retorn.toLocaleString('pt-BR')}</strong></div>
       <div><span style="color:#4a5568">Pendente:</span> <strong style="color:#e53e3e">${pendente.toLocaleString('pt-BR')}</strong></div>
-      <div><span style="color:#4a5568">Vlr/Mil:</span> <strong>R$ ${(confDistAtual.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</strong></div>
+      <div><span style="color:#4a5568">Vlr/Mil:</span> <strong>R$ ${(confDistAtual.valor_milheiro||0).toFixed(2).replace('.',',')}</strong></div>
     </div>`;
   calcConf();
 }
@@ -1791,7 +1793,7 @@ function calcConf() {
   const dev   = parseInt(document.getElementById('conf-qtde-dev').value) || 0;
   const aprov = parseInt(document.getElementById('conf-qtde-aprov').value) || 0;
   const perda = parseInt(document.getElementById('conf-qtde-perda').value) || 0;
-  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+  const vlr   = confDistAtual?.valor_milheiro || 0;
 
   // Auto-calcula perda se aprov foi preenchido
   if (dev > 0 && aprov >= 0) {
@@ -1834,7 +1836,7 @@ async function salvarDevolucao() {
   if (aprov < 0) { alerta('Qtde aprovada inválida!', 'error'); return; }
   if (aprov + perda !== dev) { alerta(`Atenção: Aprovadas (${aprov}) + Perdas (${perda}) ≠ Devolvidas (${dev})!`, 'error'); return; }
 
-  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+  const vlr   = confDistAtual?.valor_milheiro || 0;
   const valor = (vlr / 1000) * aprov;
 
   try {
@@ -1925,7 +1927,7 @@ async function renderConferencias() {
         const dt = d.data_devolucao ? d.data_devolucao.split('-').reverse().join('/') : '—';
         html += `<tr>
           <td>${dt}</td>
-          <td>${distObj.colaborador_nome || '—'}</td>
+          <td>${distObj.colaboradores || '—'}</td>
           <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
@@ -1962,7 +1964,7 @@ async function renderConferencias() {
         : '<span class="badge bg-yellow">⏳ Pendente</span>';
       html += `<tr>
         <td>${dt}</td>
-        <td style="font-size:11px">${distObj.colaborador_nome || '—'}</td>
+        <td style="font-size:11px">${distObj.colaboradores || '—'}</td>
         <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
@@ -2156,7 +2158,7 @@ async function renderFinanceiro() {
       for (const d of devs) {
         const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
         const distObj = dist[0] || {};
-        const nome = distObj.colaborador_nome || 'Desconhecido';
+        const nome = distObj.colaboradores || 'Desconhecido';
         const tipo = distObj.tipo || 'rua';
 
         // Se for interno com múltiplos, divide igualmente
