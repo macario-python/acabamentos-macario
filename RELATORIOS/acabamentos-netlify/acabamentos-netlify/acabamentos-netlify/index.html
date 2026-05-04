@@ -969,7 +969,7 @@ async function renderPainel() {
         porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
         porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
         porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
-        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro_receber||0);
+        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro||0);
       });
 
       let html = '';
@@ -1360,7 +1360,7 @@ async function salvarEntrada() {
       fornecedor: forn, data_entrada: data, data_prazo: prazo,
       condicao_pagamento: cond, tipo_sacola: tipo, vias, acabamento: acab,
       modelo, qtde_total: qtde, qtde_disponivel: qtde,
-      valor_milheiro_receber: vlr, observacao: obs, status: 'aberto'
+      valor_milheiro: vlr, observacao: obs, status: 'aberto'
     });
 
     // Salva/atualiza condição de pagamento do fornecedor
@@ -1423,7 +1423,7 @@ async function renderEntradas() {
         <td class="r" style="color:${(e.qtde_disponivel||0)>0?'#276749':'#718096'}">${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#2b6cb0">${naRua.toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(e.qtde_feita||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(e.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td style="white-space:nowrap">${prazoInfo.html}</td>
         <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
         <td>${statusBadge}</td>
