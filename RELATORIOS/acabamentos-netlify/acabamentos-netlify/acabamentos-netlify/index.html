@@ -868,22 +868,20 @@ async function carregarColaboradores(){
     colaboradores=await sbGet('colaboradores','?ativo=eq.true&order=tipo.asc,nome.asc');
     const sel=document.getElementById('dist-colaborador');
     const selFil=document.getElementById('dist-fil-colab');
-    const confSel=document.getElementById('conf-dist');
-    // Limpa e repopula
     sel.innerHTML='<option value="">Selecione...</option>';
-    selFil.innerHTML='<option value="">Todos</option>';
+    if(selFil) selFil.innerHTML='<option value="">Todos</option>';
     let grpInt=document.createElement('optgroup');grpInt.label='Internos';
     let grpRua=document.createElement('optgroup');grpRua.label='Rua';
     colaboradores.forEach(c=>{
       const o=document.createElement('option');
-      o.value=c.id;o.textContent=c.nome;o.dataset.tipo=c.tipo;
-      if(c.tipo==='interno')grpInt.appendChild(o);
-      else grpRua.appendChild(o.cloneNode(true));
-      const of=document.createElement('option');of.value=c.id;of.textContent=c.nome;
-      selFil.appendChild(of);
+      o.value=c.id;o.textContent=c.nome;o.dataset.tipo=c.tipo;o.dataset.nome=c.nome;
+      if(c.tipo==='interno') grpInt.appendChild(o);
+      else grpRua.appendChild(o);
+      if(selFil){const of=document.createElement('option');of.value=c.id;of.textContent=c.nome;selFil.appendChild(of);}
     });
-    sel.appendChild(grpInt);sel.appendChild(grpRua);
-  }catch(e){}
+    if(grpInt.children.length) sel.appendChild(grpInt);
+    if(grpRua.children.length) sel.appendChild(grpRua);
+  }catch(e){console.error('Erro ao carregar colaboradores:',e);}
 }
 
 // ===== PAINEL GERAL =====
