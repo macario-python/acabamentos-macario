@@ -208,6 +208,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
   table.tbl tbody td:last-child{border-bottom:none;padding-top:6px;justify-content:flex-end;gap:5px}
   table.tbl tbody td[data-label]::before{content:attr(data-label);font-size:10px;font-weight:700;text-transform:uppercase;color:#a0aec0;white-space:nowrap;margin-right:6px}
   .distrib-row{grid-template-columns:1fr 1fr;gap:6px}
+  .dist-header-grid{grid-template-columns:1fr 1fr!important}
+  .dist-header-grid > .field:first-child{grid-column:span 2}
 }
 </style>
 </head>
@@ -231,7 +233,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="tab" onclick="showTab('distribuicao',this)">🔀 Distribuição</div>
   <div class="tab" onclick="showTab('conferencia',this)">✅ Conferência</div>
   <div class="tab" onclick="showTab('financeiro',this)">💰 Financeiro</div>
-  <div class="tab" onclick="showTab('colaboradores',this)">👥 Colaboradores</div>
   <div class="tab" onclick="showTab('historico',this)">🕐 Histórico</div>
 </div>
 
@@ -419,8 +420,8 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="card">
     <div class="card-title">Nova Distribuição</div>
 
-    <!-- Linha 1: Entrada, Tipo, Data, Qtde -->
-    <div class="g4">
+    <!-- Linha 1: Entrada, Tipo, Data, Qtde, Data Pagamento -->
+    <div class="dist-header-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:12px">
       <div class="field">
         <label>Entrada <span class="req">*</span></label>
         <select id="dist-entrada" onchange="onDistEntradaChange()">
@@ -437,12 +438,17 @@ table.tbl tbody tr:hover{background:#fafbfc}
       </div>
       <div class="field">
         <label>Data Saída <span class="req">*</span></label>
-        <input type="date" id="dist-data" onchange="calcDataPagPadrao()">
+        <input type="date" id="dist-data" onchange="calcDataPagamentoPadrao()">
+      </div>
+      <div class="field">
+        <label>Qtde Retirada <span class="req">*</span></label>
+        <input type="number" id="dist-qtde" placeholder="0" min="0" oninput="calcDistTotal()">
+        <span id="dist-saldo-info" style="font-size:10px;color:#718096;margin-top:2px"></span>
       </div>
       <div class="field">
         <label>Data Pagamento</label>
-        <input type="date" id="dist-data-pag" placeholder="Deixe vazio para padrão (dia 15 do mês seguinte)">
-        <span style="font-size:10px;color:#718096;margin-top:2px" id="dist-pag-info">Padrão: dia 15 do mês seguinte</span>
+        <input type="date" id="dist-data-pgto">
+        <span id="dist-pgto-padrao" style="font-size:10px;color:#718096;margin-top:2px"></span>
       </div>
     </div>
 
@@ -711,33 +717,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
 
 </div>
 
-<!-- ========== COLABORADORES ========== -->
-<div id="tab-colaboradores" class="section">
-  <div class="card">
-    <div class="card-title">Novo Colaborador</div>
-    <div class="g3">
-      <div class="field"><label>Nome <span class="req">*</span></label>
-        <input type="text" id="col-nome" placeholder="Nome completo"></div>
-      <div class="field"><label>Tipo <span class="req">*</span></label>
-        <select id="col-tipo">
-          <option value="">Selecione...</option>
-          <option value="interno">🏭 Interno</option>
-          <option value="rua">👥 Rua</option>
-        </select></div>
-      <div class="field"><label>Telefone</label>
-        <input type="text" id="col-tel" placeholder="WhatsApp"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-save" onclick="salvarColaborador()">💾 Cadastrar</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Colaboradores Cadastrados</div>
-    <div id="col-lista"><div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div></div>
-  </div>
-</div>
-
 <!-- ========== HISTÓRICO ========== -->
 <div id="tab-historico" class="section">
   <div class="card">
@@ -816,12 +795,7 @@ const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'ap
 
 // ===== SUPABASE =====
 async function sbGet(t,p=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}${p}`,{headers:H});if(!r.ok)throw new Error('Erro ao carregar');return r.json()}
-async function sbPost(t,b){
-  const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)});
-  const data=await r.json();
-  if(!r.ok) throw new Error(`API erro ${r.status}: ${JSON.stringify(data)}`);
-  return data;
-}
+async function sbPost(t,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)});return r.json()}
 async function sbPatch(t,id,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});return r.json()}
 async function sbDelete(t,id){await fetch(`${SUPA_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H})}
 async function sbUpsert(t,b){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},body:JSON.stringify(b)});return r.json()}
@@ -853,12 +827,11 @@ window.onload=async()=>{
   document.getElementById('inp-data').value=hoje;
   document.getElementById('ent-data').value = hoje;
   document.getElementById('dist-data').value = hoje;
-  document.getElementById('conf-data').value = hoje;
-  // Entrada não filtra por mês por padrão — mostra tudo
-  document.getElementById('ent-fil-mes').value = '';
-  document.getElementById('dist-fil-mes').value = mes;
-  document.getElementById('fin-mes').value = mes;
-  document.getElementById('hist-mes').value = mes;
+  document.getElementById('conf-data').value=hoje;
+  document.getElementById('ent-fil-mes').value=mes;
+  document.getElementById('dist-fil-mes').value=mes;
+  document.getElementById('fin-mes').value=mes;
+  document.getElementById('hist-mes').value=mes;
   await carregarConfig();
   await carregarColaboradores();
   addItem();
@@ -892,39 +865,25 @@ function atualizarHeaderPix(){
 
 async function carregarColaboradores(){
   try{
-    colaboradores = await sbGet('colaboradores','?ativo=eq.true&order=tipo.asc,nome.asc');
-    const sel = document.getElementById('dist-colaborador');
-    const selFil = document.getElementById('dist-fil-colab');
-
-    sel.innerHTML = '<option value="">Selecione...</option>';
-    if (selFil) selFil.innerHTML = '<option value="">Todos</option>';
-
-    let grpInt = document.createElement('optgroup'); grpInt.label = '🏭 Internos';
-    let grpRua = document.createElement('optgroup'); grpRua.label = '👥 Rua';
-
-    colaboradores.forEach(c => {
-      const o = document.createElement('option');
-      o.value = c.id; o.textContent = c.nome; o.dataset.tipo = c.tipo; o.dataset.nome = c.nome;
-
-      if (c.tipo === 'interno') {
-        grpInt.appendChild(o);
-      } else {
-        grpRua.appendChild(o);
-      }
-
-      if (selFil) {
-        const of = document.createElement('option');
-        of.value = c.id; of.textContent = c.nome;
-        selFil.appendChild(of);
-      }
+    colaboradores=await sbGet('colaboradores','?ativo=eq.true&order=tipo.asc,nome.asc');
+    const sel=document.getElementById('dist-colaborador');
+    const selFil=document.getElementById('dist-fil-colab');
+    const confSel=document.getElementById('conf-dist');
+    // Limpa e repopula
+    sel.innerHTML='<option value="">Selecione...</option>';
+    selFil.innerHTML='<option value="">Todos</option>';
+    let grpInt=document.createElement('optgroup');grpInt.label='Internos';
+    let grpRua=document.createElement('optgroup');grpRua.label='Rua';
+    colaboradores.forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c.id;o.textContent=c.nome;o.dataset.tipo=c.tipo;
+      if(c.tipo==='interno')grpInt.appendChild(o);
+      else grpRua.appendChild(o.cloneNode(true));
+      const of=document.createElement('option');of.value=c.id;of.textContent=c.nome;
+      selFil.appendChild(of);
     });
-
-    if (grpInt.children.length > 0) sel.appendChild(grpInt);
-    if (grpRua.children.length > 0) sel.appendChild(grpRua);
-
-  } catch(e) {
-    alerta('Erro ao carregar colaboradores: ' + e.message, 'error');
-  }
+    sel.appendChild(grpInt);sel.appendChild(grpRua);
+  }catch(e){}
 }
 
 // ===== PAINEL GERAL =====
@@ -1010,7 +969,7 @@ async function renderPainel() {
         porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
         porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
         porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
-        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro||0);
+        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro_receber||0);
       });
 
       let html = '';
@@ -1123,84 +1082,7 @@ function showTab(t,el){
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
   if(t==='financeiro')renderFinanceiro();
-  if(t==='colaboradores')renderColaboradores();
   if(t==='historico')renderHistorico();
-}
-
-// ===== COLABORADORES =====
-async function salvarColaborador() {
-  const nome = document.getElementById('col-nome').value.trim();
-  const tipo = document.getElementById('col-tipo').value;
-  const tel  = document.getElementById('col-tel').value.trim();
-  if (!nome) { alerta('Informe o nome!', 'error'); return; }
-  if (!tipo) { alerta('Selecione o tipo!', 'error'); return; }
-  try {
-    await sbPost('colaboradores', { nome, tipo, telefone: tel, ativo: true });
-    alerta('Colaborador cadastrado!', 'success');
-    document.getElementById('col-nome').value = '';
-    document.getElementById('col-tipo').value = '';
-    document.getElementById('col-tel').value = '';
-    await carregarColaboradores();
-    renderColaboradores();
-  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
-}
-
-async function renderColaboradores() {
-  const el = document.getElementById('col-lista');
-  try {
-    const lista = await sbGet('colaboradores', '?order=tipo.asc,nome.asc');
-    if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">👥</div><p>Nenhum colaborador cadastrado.</p></div>'; return; }
-
-    const internos = lista.filter(c => c.tipo === 'interno');
-    const rua      = lista.filter(c => c.tipo === 'rua');
-
-    let html = '';
-    if (internos.length) {
-      html += `<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">🏭 Internos</div>`;
-      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px">`;
-      internos.forEach(c => {
-        html += `<div style="background:#faf5ff;border:1px solid #e9d8fd;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:600;font-size:13px">${c.nome}</div>
-            ${c.telefone ? `<div style="font-size:11px;color:#718096">${c.telefone}</div>` : ''}
-          </div>
-          <div style="display:flex;gap:4px">
-            <span class="badge bg-purple">Interno</span>
-            <button onclick="toggleAtivo(${c.id},${c.ativo})" style="background:none;border:1px solid ${c.ativo?'#fed7d7':'#c6f6d5'};border-radius:6px;color:${c.ativo?'#e53e3e':'#276749'};padding:2px 7px;cursor:pointer;font-size:10px">${c.ativo?'Desativar':'Ativar'}</button>
-          </div>
-        </div>`;
-      });
-      html += '</div>';
-    }
-
-    if (rua.length) {
-      html += `<div style="font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">👥 Rua</div>`;
-      html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">`;
-      rua.forEach(c => {
-        html += `<div style="background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;${!c.ativo?'opacity:.5':''}">
-          <div>
-            <div style="font-weight:600;font-size:13px">${c.nome}</div>
-            ${c.telefone ? `<div style="font-size:11px;color:#718096">${c.telefone}</div>` : ''}
-          </div>
-          <div style="display:flex;gap:4px">
-            <span class="badge bg-blue">Rua</span>
-            <button onclick="toggleAtivo(${c.id},${c.ativo})" style="background:none;border:1px solid ${c.ativo?'#fed7d7':'#c6f6d5'};border-radius:6px;color:${c.ativo?'#e53e3e':'#276749'};padding:2px 7px;cursor:pointer;font-size:10px">${c.ativo?'Desativar':'Ativar'}</button>
-          </div>
-        </div>`;
-      });
-      html += '</div>';
-    }
-
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
-}
-
-async function toggleAtivo(id, ativo) {
-  try {
-    await sbPatch('colaboradores', id, { ativo: !ativo });
-    await carregarColaboradores();
-    renderColaboradores();
-  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
 
 // ===== MODALS =====
@@ -1478,7 +1360,7 @@ async function salvarEntrada() {
       fornecedor: forn, data_entrada: data, data_prazo: prazo,
       condicao_pagamento: cond, tipo_sacola: tipo, vias, acabamento: acab,
       modelo, qtde_total: qtde, qtde_disponivel: qtde,
-      valor_milheiro: vlr, observacao: obs, status: 'aberto'
+      valor_milheiro_receber: vlr, observacao: obs, status: 'aberto'
     });
 
     // Salva/atualiza condição de pagamento do fornecedor
@@ -1512,6 +1394,7 @@ async function renderEntradas() {
     const ul = new Date(+a, +m, 0).getDate();
     p += `&data_entrada=gte.${mes}-01&data_entrada=lte.${mes}-${ul}`;
   }
+
   try {
     const lista = await sbGet('entradas', p);
     if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="ico">📥</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
@@ -1540,7 +1423,7 @@ async function renderEntradas() {
         <td class="r" style="color:${(e.qtde_disponivel||0)>0?'#276749':'#718096'}">${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#2b6cb0">${naRua.toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(e.qtde_feita||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(e.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
         <td style="white-space:nowrap">${prazoInfo.html}</td>
         <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
         <td>${statusBadge}</td>
@@ -1561,33 +1444,38 @@ async function delEntrada(id){if(!confirm('Excluir esta entrada?'))return;await 
 let distEntradaAtual = null;
 let distInternosCount = 0;
 
+function calcDataPagamentoPadrao() {
+  const dataSaida = document.getElementById('dist-data').value;
+  const pgtoInput = document.getElementById('dist-data-pgto');
+  const pgtoInfo  = document.getElementById('dist-pgto-padrao');
+  if (!dataSaida) return;
+  // Padrão: 45 dias após data de saída
+  const d = new Date(dataSaida + 'T00:00:00');
+  d.setDate(d.getDate() + 45);
+  const iso = d.toISOString().split('T')[0];
+  if (!pgtoInput.value) pgtoInput.value = iso;
+  const [y,m,dd] = iso.split('-');
+  pgtoInfo.textContent = `Padrão: ${dd}/${m}/${y}`;
+}
+
 async function carregarEntradasSelect() {
   try {
     const lista = await sbGet('entradas', '?status=neq.concluido&order=data_prazo.asc,id.desc');
     const sel = document.getElementById('dist-entrada');
     sel.innerHTML = '<option value="">Selecione a entrada...</option>';
-
-    if (!lista.length) {
-      sel.innerHTML = '<option value="">Nenhuma entrada com saldo disponível</option>';
-      return;
-    }
-
     lista.forEach(e => {
+      if ((e.qtde_disponivel || 0) <= 0) return;
       const o = document.createElement('option');
       o.value = e.id;
       const dt = e.data_entrada ? e.data_entrada.split('-').reverse().join('/') : '';
       const prazo = e.data_prazo ? e.data_prazo.split('-').reverse().join('/') : '';
       const tipo = [e.tipo_sacola, e.vias].filter(Boolean).join(' ');
-      const saldo = e.qtde_disponivel || 0;
-      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${saldo.toLocaleString('pt-BR')} | Prazo: ${prazo}`;
-      o.dataset.saldo = saldo;
+      o.textContent = `${e.fornecedor} — ${e.modelo} (${tipo}) | Disp: ${(e.qtde_disponivel||0).toLocaleString('pt-BR')} | Prazo: ${prazo}`;
+      o.dataset.saldo = e.qtde_disponivel;
       o.dataset.entradaObj = JSON.stringify(e);
-      // Mostra todas, mesmo saldo zero (para não esconder)
       sel.appendChild(o);
     });
-  } catch(e) {
-    alerta('Erro ao carregar entradas: ' + e.message, 'error');
-  }
+  } catch(e) {}
 }
 
 function onDistEntradaChange() {
@@ -1613,35 +1501,6 @@ function onDistTipoChange() {
   if (tipo === 'interno' && document.getElementById('dist-internos-lista').children.length === 0) {
     addColabInterno();
   }
-}
-
-function calcPrazoPag(dataPag) {
-  if (!dataPag) return '<span style="font-size:11px;color:#718096">—</span>';
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const d = new Date(dataPag + 'T00:00:00');
-  const diff = Math.round((d - hoje)/(1000*60*60*24));
-  const fmt = dataPag.split('-').reverse().join('/');
-  if (diff < 0)  return `<span class="prazo-atrasado">🔴 Atrasado ${Math.abs(diff)}d (${fmt})</span>`;
-  if (diff === 0) return `<span class="prazo-urgente">🚨 HOJE (${fmt})</span>`;
-  if (diff <= 3)  return `<span class="prazo-urgente">🔴 ${diff}d — ${fmt}</span>`;
-  if (diff <= 7)  return `<span class="prazo-alerta">🟡 ${diff}d — ${fmt}</span>`;
-  return `<span class="prazo-ok">🟢 ${diff}d — ${fmt}</span>`;
-}
-
-function calcDataPagPadrao() {
-  const data = document.getElementById('dist-data').value;
-  const info = document.getElementById('dist-pag-info');
-  if (!data) return;
-  // Dia 15 do mês seguinte
-  const d = new Date(data + 'T00:00:00');
-  const mes = d.getMonth() + 2; // próximo mês (0-based +2)
-  const ano = mes > 12 ? d.getFullYear() + 1 : d.getFullYear();
-  const mesAdj = mes > 12 ? 1 : mes;
-  const padrao = `${ano}-${String(mesAdj).padStart(2,'0')}-15`;
-  // Só preenche se estiver vazio
-  const campo = document.getElementById('dist-data-pag');
-  if (!campo.value) campo.value = padrao;
-  info.textContent = `Padrão: 15/${String(mesAdj).padStart(2,'0')}/${ano}`;
 }
 
 function calcDistValor() {
@@ -1780,15 +1639,6 @@ async function salvarDistribuicao() {
   }
 
   try {
-    // Data de pagamento — padrão dia 15 do mês seguinte
-    const dataPag = document.getElementById('dist-data-pag').value || (() => {
-      const d = new Date(data + 'T00:00:00');
-      const mes = d.getMonth() + 2;
-      const ano = mes > 12 ? d.getFullYear() + 1 : d.getFullYear();
-      const mesAdj = mes > 12 ? 1 : mes;
-      return `${ano}-${String(mesAdj).padStart(2,'0')}-15`;
-    })();
-
     // Salva distribuição
     await sbPost('distribuicoes', {
       entrada_id: parseInt(entId), tipo, colaborador_id: colaboradorId,
@@ -1796,7 +1646,7 @@ async function salvarDistribuicao() {
       colaboradores_internos: tipo === 'interno' ? JSON.stringify(colaboradoresInternos) : null,
       data_saida: data, qtde_enviada: qtde, servico,
       valor_milheiro_pagar: vlr, status: 'pendente',
-      data_pagamento: dataPag
+      data_pagamento: document.getElementById('dist-data-pgto').value || null
     });
 
     // Baixa saldo da entrada
@@ -1815,6 +1665,8 @@ async function salvarDistribuicao() {
     document.getElementById('dist-tipo').value = '';
     document.getElementById('dist-qtde').value = '';
     document.getElementById('dist-data').value = new Date().toISOString().split('T')[0];
+    document.getElementById('dist-data-pgto').value = '';
+    document.getElementById('dist-pgto-padrao').textContent = '';
     document.getElementById('dist-bloco-rua').style.display = 'none';
     document.getElementById('dist-bloco-interno').style.display = 'none';
     document.getElementById('dist-internos-lista').innerHTML = '';
@@ -2321,17 +2173,11 @@ async function renderFinanceiro() {
         }
 
         const valorPorPessoa = (d.valor_a_pagar || 0) / pessoas.length;
-        // Pega data_pagamento da distribuição
-        const dataPag = distObj.data_pagamento || null;
         pessoas.forEach(p => {
-          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, dataPag: dataPag };
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0 };
           porColab[p.nome].total += valorPorPessoa;
           porColab[p.nome].qtde  += Math.round((d.qtde_aprovada || 0) / pessoas.length);
           porColab[p.nome].perda += Math.round((d.qtde_perda    || 0) / pessoas.length);
-          // Mantém a data mais próxima
-          if (dataPag && (!porColab[p.nome].dataPag || dataPag < porColab[p.nome].dataPag)) {
-            porColab[p.nome].dataPag = dataPag;
-          }
         });
       }
 
@@ -2339,22 +2185,19 @@ async function renderFinanceiro() {
       let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Colaborador</th><th>Tipo</th>
         <th class="r">Qtde Produzida</th><th class="r">Perdas</th>
-        <th class="r">Total a Pagar</th><th>Dt Pagamento</th>
+        <th class="r">Total a Pagar</th>
       </tr></thead><tbody>`;
 
       lista.forEach(c => {
         const tipoBadge = c.tipo === 'interno'
           ? '<span class="badge bg-purple">🏭 Interno</span>'
           : '<span class="badge bg-blue">👥 Rua</span>';
-        const vencPag = c.dataPag ? calcVencimento(null, null, c.dataPag) : null;
-        const dtPagFmt = c.dataPag ? c.dataPag.split('-').reverse().join('/') : '—';
         html += `<tr>
           <td><strong>${c.nome}</strong></td>
           <td>${tipoBadge}</td>
           <td class="r" style="font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
           <td class="r" style="font-weight:800;color:#276749;font-size:14px">R$ ${c.total.toFixed(2).replace('.',',')}</td>
-          <td style="white-space:nowrap">${calcPrazoPag(c.dataPag)}</td>
         </tr>`;
       });
 
