@@ -1875,12 +1875,17 @@ function calcConf() {
   const valor = (vlr / 1000) * aprovFinal;
   document.getElementById('conf-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
 
-  // Alerta se devolvido > enviado
+  // Info de divergência
   if (confDistAtual) {
     const pendente = (confDistAtual.qtde_enviada||0) - (confDistAtual.qtde_retornada||0);
     const info = document.getElementById('conf-saldo-info');
     if (dev > pendente) {
-      info.textContent = `⚠ Qtde excede o pendente! (${pendente.toLocaleString('pt-BR')} un pendentes)`;
+      const extra = dev - pendente;
+      info.textContent = `⚠ Veio ${extra} a mais que o enviado — divergência positiva`;
+      info.style.color = '#d69e2e';
+    } else if (dev < pendente && dev > 0) {
+      const falta = pendente - dev;
+      info.textContent = `⚠ Faltam ${falta.toLocaleString('pt-BR')} un — marque como entrega parcial se não fechou`;
       info.style.color = '#e53e3e';
     } else {
       info.textContent = `Pendente de retorno: ${pendente.toLocaleString('pt-BR')} un`;
