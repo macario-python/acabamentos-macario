@@ -1940,6 +1940,7 @@ async function salvarDevolucao() {
     document.getElementById('conf-saldo-info').textContent = '';
     confDistAtual = null;
 
+    carregarDistribuicoesSelect();
     renderConferencias();
     renderConfPainel();
   } catch(e) { alerta('Erro: ' + e.message, 'error'); }
