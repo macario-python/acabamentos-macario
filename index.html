@@ -1745,6 +1745,10 @@ async function salvarDistribuicao() {
 
     carregarEntradasSelect();
     renderDistribuicoes();
+  } catch(e) { alerta('Erro: ' + e.message, 'error'); }
+}
+
+async function renderDistribuicoes() {
   const tipo   = document.getElementById('dist-fil-tipo').value;
   const status = document.getElementById('dist-fil-status').value;
   const mes    = document.getElementById('dist-fil-mes').value;
