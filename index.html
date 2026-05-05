@@ -1860,7 +1860,7 @@ function calcConf() {
   const dev   = parseInt(document.getElementById('conf-qtde-dev').value) || 0;
   const aprov = parseInt(document.getElementById('conf-qtde-aprov').value) || 0;
   const perda = parseInt(document.getElementById('conf-qtde-perda').value) || 0;
-  const vlr   = confDistAtual?.valor_milheiro || 0;
+  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
 
   // Auto-calcula perda se aprov foi preenchido
   if (dev > 0 && aprov >= 0) {
@@ -1903,7 +1903,7 @@ async function salvarDevolucao() {
   if (aprov < 0) { alerta('Qtde aprovada inválida!', 'error'); return; }
   if (aprov + perda !== dev) { alerta(`Atenção: Aprovadas (${aprov}) + Perdas (${perda}) ≠ Devolvidas (${dev})!`, 'error'); return; }
 
-  const vlr   = confDistAtual?.valor_milheiro || 0;
+  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
   const valor = (vlr / 1000) * aprov;
 
   try {
@@ -1914,7 +1914,7 @@ async function salvarDevolucao() {
       data_devolucao: data,
       qtde_devolvida: dev, qtde_aprovada: aprov, qtde_perda: perda,
       motivo_perda: motivo, conferido: true,
-      data_conferencia: data, valor_a_pagar: valor
+      valor_a_pagar: valor
     });
 
     // Atualiza distribuição
