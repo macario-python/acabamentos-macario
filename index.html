@@ -1956,13 +1956,16 @@ async function renderConfPainel() {
     // Total de unidades aguardando conferência (devolvidas mas não conferidas)
     const unAConf = aConf.reduce((s, d) => s + (d.qtde_devolvida||0), 0);
 
+    // Colaboradoras que ainda não devolveram nada (qtde_retornada = 0 ou null)
+    const faltamDevolver = pend.filter(d => (d.qtde_retornada||0) < (d.qtde_enviada||0)).length;
+
     document.getElementById('conf-res-pend').textContent     = unNaRua.toLocaleString('pt-BR');
-    document.getElementById('conf-res-conferir').textContent = unAConf.toLocaleString('pt-BR');
+    document.getElementById('conf-res-conferir').textContent = faltamDevolver;
     document.getElementById('conf-res-prontas').textContent  = totalProntas.toLocaleString('pt-BR');
 
     // Atualiza subtítulos
     document.querySelector('#conf-res-pend').closest('.p-box').querySelector('.sub').textContent = 'unidades na rua';
-    document.querySelector('#conf-res-conferir').closest('.p-box').querySelector('.sub').textContent = 'unidades a conferir';
+    document.querySelector('#conf-res-conferir').closest('.p-box').querySelector('.sub').textContent = 'colaboradoras p/ devolver';
   } catch(e) {}
 }
 
