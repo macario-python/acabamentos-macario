@@ -350,11 +350,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <label>Tipo de Sacola <span class="req">*</span></label>
         <select id="ent-tipo">
           <option value="">Selecione...</option>
-          <option>Saco</option>
-          <option>Sacola</option>
-          <option>Garrafa</option>
-          <option>Garfinhos</option>
-          <option>Porta Talher</option>
         </select>
       </div>
       <div class="field">
@@ -369,13 +364,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <label>Acabamento</label>
         <select id="ent-acabamento">
           <option value="">—</option>
-          <option>Com alça colada</option>
-          <option>Sem alça</option>
-          <option>Com cordão</option>
-          <option>Sem cordão</option>
-          <option>Com ilhós</option>
-          <option>Sem ilhós</option>
-          <option>Alça torcida</option>
         </select>
       </div>
       <div class="field"><label>Modelo / Descrição <span class="req">*</span></label><input type="text" id="ent-modelo" placeholder="Ex: JustBurguer G29"></div>
@@ -771,6 +759,32 @@ table.tbl tbody tr:hover{background:#fafbfc}
     <div class="card-title">📋 Colaboradoras Cadastradas</div>
     <div id="cad-lista"><div class="empty-state"><div class="ico">👤</div><p>Carregando...</p></div></div>
   </div>
+
+  <!-- Acabamentos -->
+  <div class="card">
+    <div class="card-title">✂️ Tipos de Acabamento</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <label>Novo Acabamento</label>
+        <input type="text" id="cad-acab-novo" placeholder="Ex: Com velcro">
+      </div>
+      <button class="btn-ms" onclick="salvarOpcao('acabamento','cad-acab-novo')">➕ Adicionar</button>
+    </div>
+    <div id="cad-acab-lista"></div>
+  </div>
+
+  <!-- Tipos de Sacola -->
+  <div class="card">
+    <div class="card-title">🛍️ Tipos de Sacola</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <label>Novo Tipo</label>
+        <input type="text" id="cad-sacola-novo" placeholder="Ex: Caixa">
+      </div>
+      <button class="btn-ms" onclick="salvarOpcao('tipo_sacola','cad-sacola-novo')">➕ Adicionar</button>
+    </div>
+    <div id="cad-sacola-lista"></div>
+  </div>
 </div>
 
 </div><!-- end content -->
@@ -883,6 +897,7 @@ window.onload=async()=>{
   document.getElementById('hist-mes').value=mes;
   await carregarConfig();
   await carregarColaboradores();
+  await carregarOpcoes();
   addItem();
   renderPainel();
   iniciarRealtime();
@@ -1132,7 +1147,7 @@ function showTab(t,el){
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
   if(t==='financeiro')renderFinanceiro();
   if(t==='historico')renderHistorico();
-  if(t==='cadastro')renderCadastro();
+  if(t==='cadastro'){renderCadastro();renderOpcoes('acabamento','cad-acab-lista');renderOpcoes('tipo_sacola','cad-sacola-lista');}
 }
 
 // ===== MODALS =====
@@ -2483,6 +2498,89 @@ async function salvarEdicaoColaboradora(){
     fecharModal('modal-edit-colab');
     await carregarColaboradores();
     renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+// ===== OPÇÕES (acabamento, tipo_sacola) =====
+let opcoesCache = {};
+
+async function carregarOpcoes(){
+  try{
+    const lista = await sbGet('opcoes','?ativo=eq.true&order=tipo.asc,valor.asc');
+    opcoesCache = {};
+    lista.forEach(o => {
+      if(!opcoesCache[o.tipo]) opcoesCache[o.tipo] = [];
+      opcoesCache[o.tipo].push(o);
+    });
+    // Popula selects de entrada
+    popularSelect('ent-tipo', opcoesCache['tipo_sacola']||[], '');
+    popularSelect('ent-acabamento', opcoesCache['acabamento']||[], '—');
+  }catch(e){ console.error('Erro ao carregar opções:',e); }
+}
+
+function popularSelect(id, lista, placeholder){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const val = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  lista.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.valor; opt.textContent = o.valor;
+    sel.appendChild(opt);
+  });
+  if(val) sel.value = val;
+}
+
+async function salvarOpcao(tipo, inputId){
+  const inp = document.getElementById(inputId);
+  const valor = inp.value.trim();
+  if(!valor){ alerta('Informe o valor!','error'); return; }
+  try{
+    await sbPost('opcoes',{tipo, valor, ativo: true});
+    alerta('Adicionado!','success');
+    inp.value = '';
+    await carregarOpcoes();
+    renderOpcoes(tipo, tipo==='acabamento'?'cad-acab-lista':'cad-sacola-lista');
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderOpcoes(tipo, elId){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  try{
+    const lista = await sbGet('opcoes',`?tipo=eq.${tipo}&order=valor.asc`);
+    if(!lista.length){ el.innerHTML='<p style="color:#718096;font-size:12px">Nenhuma opção cadastrada.</p>'; return; }
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    lista.forEach(o => {
+      const bg = o.ativo ? '#f0fff4' : '#fff5f5';
+      const cor = o.ativo ? '#276749' : '#c53030';
+      html += `<div style="background:${bg};border:1px solid ${cor}30;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:13px">
+        <span id="opcao-txt-${o.id}" style="color:${cor}">${o.valor}</span>
+        <button onclick="editarOpcao(${o.id},'${o.valor}')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0" title="Editar">✏️</button>
+        <button onclick="toggleOpcao(${o.id},${o.ativo},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0" title="${o.ativo?'Desativar':'Ativar'}">${o.ativo?'🔴':'🟢'}</button>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
+}
+
+function editarOpcao(id, valorAtual){
+  const novo = prompt('Editar opção:', valorAtual);
+  if(!novo || novo.trim() === valorAtual) return;
+  sbPatch('opcoes', id, {valor: novo.trim()}).then(async ()=>{
+    alerta('Atualizado!','success');
+    await carregarOpcoes();
+    renderOpcoes('acabamento','cad-acab-lista');
+    renderOpcoes('tipo_sacola','cad-sacola-lista');
+  }).catch(e => alerta('Erro: '+e.message,'error'));
+}
+
+async function toggleOpcao(id, ativo, tipo){
+  try{
+    await sbPatch('opcoes', id, {ativo: !ativo});
+    await carregarOpcoes();
+    renderOpcoes(tipo, tipo==='acabamento'?'cad-acab-lista':'cad-sacola-lista');
   }catch(e){ alerta('Erro: '+e.message,'error'); }
 }
 </script>
