@@ -234,6 +234,7 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="tab" onclick="showTab('conferencia',this)">✅ Conferência</div>
   <div class="tab" onclick="showTab('financeiro',this)">💰 Financeiro</div>
   <div class="tab" onclick="showTab('historico',this)">🕐 Histórico</div>
+  <div class="tab" onclick="showTab('cadastro',this)">⚙️ Cadastro</div>
 </div>
 
 <div class="content">
@@ -742,6 +743,36 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="card" id="hist-lista"></div>
 </div>
 
+<!-- ABA CADASTRO -->
+<div id="tab-cadastro" class="section">
+  <div class="card">
+    <div class="card-title">👤 Cadastrar Colaboradora</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+      <div class="field">
+        <label>Nome <span class="req">*</span></label>
+        <input type="text" id="cad-nome" placeholder="Nome da colaboradora">
+      </div>
+      <div class="field">
+        <label>Tipo <span class="req">*</span></label>
+        <select id="cad-tipo">
+          <option value="">Selecione...</option>
+          <option value="rua">👥 Colaboradora da Rua</option>
+          <option value="interno">🏭 Interno</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Telefone</label>
+        <input type="text" id="cad-tel" placeholder="(11) 99999-9999">
+      </div>
+      <button class="btn-ms" onclick="salvarColaboradora()">➕ Cadastrar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Colaboradoras Cadastradas</div>
+    <div id="cad-lista"><div class="empty-state"><div class="ico">👤</div><p>Carregando...</p></div></div>
+  </div>
+</div>
+
 </div><!-- end content -->
 
 <!-- MODALS -->
@@ -1083,6 +1114,7 @@ function showTab(t,el){
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
   if(t==='financeiro')renderFinanceiro();
   if(t==='historico')renderHistorico();
+  if(t==='cadastro')renderCadastro();
 }
 
 // ===== MODALS =====
@@ -2342,6 +2374,59 @@ function alerta(msg,tipo){
   const icons={success:'✅',error:'❌',info:'ℹ️'};
   b.className='alert alert-'+tipo;b.innerHTML=`${icons[tipo]||''} ${msg}`;b.style.display='flex';
   setTimeout(()=>b.style.display='none',4000);
+}
+
+// ===== CADASTRO =====
+async function salvarColaboradora(){
+  const nome = document.getElementById('cad-nome').value.trim();
+  const tipo = document.getElementById('cad-tipo').value;
+  const tel  = document.getElementById('cad-tel').value.trim();
+  if(!nome){ alerta('Informe o nome!','error'); return; }
+  if(!tipo){ alerta('Selecione o tipo!','error'); return; }
+  try{
+    await sbPost('colaboradores',{nome, tipo, telefone: tel||null, ativo: true});
+    alerta('Colaboradora cadastrada!','success');
+    document.getElementById('cad-nome').value='';
+    document.getElementById('cad-tipo').value='';
+    document.getElementById('cad-tel').value='';
+    await carregarColaboradores();
+    renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderCadastro(){
+  const el = document.getElementById('cad-lista');
+  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+  try{
+    const lista = await sbGet('colaboradores','?order=tipo.asc,nome.asc');
+    if(!lista.length){ el.innerHTML='<div class="empty-state"><div class="ico">👤</div><p>Nenhuma colaboradora cadastrada.</p></div>'; return; }
+    let html=`<table class="tbl"><thead><tr><th>Nome</th><th>Tipo</th><th>Telefone</th><th>Status</th><th></th></tr></thead><tbody>`;
+    lista.forEach(c=>{
+      const badge = c.tipo==='interno'
+        ? '<span class="badge bg-purple">🏭 Interno</span>'
+        : '<span class="badge bg-blue">👥 Rua</span>';
+      const status = c.ativo
+        ? '<span class="badge bg-green">✅ Ativo</span>'
+        : '<span class="badge bg-yellow">⏸ Inativo</span>';
+      html+=`<tr>
+        <td><strong>${c.nome}</strong></td>
+        <td>${badge}</td>
+        <td>${c.telefone||'—'}</td>
+        <td>${status}</td>
+        <td><button class="btn-mc" style="font-size:11px;padding:4px 8px" onclick="toggleColaboradora(${c.id},${c.ativo})">${c.ativo?'Desativar':'Ativar'}</button></td>
+      </tr>`;
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+}
+
+async function toggleColaboradora(id, ativo){
+  try{
+    await sbPatch('colaboradores', id, {ativo: !ativo});
+    await carregarColaboradores();
+    renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
 }
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));</script>
