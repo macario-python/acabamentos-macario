@@ -1649,13 +1649,14 @@ async function salvarDistribuicao() {
       data_pagamento: document.getElementById('dist-data-pgto').value || null
     });
 
-    // Baixa saldo da entrada
-    const novoSaldo = (distEntradaAtual?.qtde_disponivel || 0) - qtde;
-    const novaDistrib = (distEntradaAtual?.qtde_distribuida || 0) + qtde;
+    // Baixa saldo da entrada — busca saldo atual do banco para evitar sobrescrita errada
+    const [entradaAtual] = await sbGet('entradas', `?id=eq.${entId}`);
+    const novoSaldo = (entradaAtual?.qtde_disponivel || 0) - qtde;
+    const novaDistrib = (entradaAtual?.qtde_distribuida || 0) + qtde;
     await sbPatch('entradas', entId, {
       qtde_disponivel: novoSaldo,
       qtde_distribuida: novaDistrib,
-      status: novoSaldo <= 0 ? 'em_andamento' : 'em_andamento'
+      status: 'em_andamento'
     });
 
     alerta('Distribuição registrada! Saldo atualizado.', 'success');
@@ -1664,6 +1665,7 @@ async function salvarDistribuicao() {
     document.getElementById('dist-entrada').value = '';
     document.getElementById('dist-tipo').value = '';
     document.getElementById('dist-qtde').value = '';
+    document.getElementById('dist-colaborador').value = '';
     document.getElementById('dist-data').value = new Date().toISOString().split('T')[0];
     document.getElementById('dist-data-pgto').value = '';
     document.getElementById('dist-pgto-padrao').textContent = '';
