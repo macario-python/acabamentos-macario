@@ -692,8 +692,62 @@ table.tbl tbody tr:hover{background:#fafbfc}
   </div>
 
   <div class="card">
-    <div class="card-title">Por Colaborador</div>
+    <div class="card-title">Por Colaborador — A Pagar</div>
     <div id="fin-pag-card"><div class="empty-state"><div class="ico">💸</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- Pagamentos Efetuados -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    ✅ Pagamentos Efetuados
+  </div>
+  <div class="card">
+    <div id="fin-pagos-card"><div class="empty-state"><div class="ico">✅</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- Pesquisa por Colaborador -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    🔍 Pesquisa por Colaborador
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+      <div class="field" style="margin:0">
+        <label>Colaborador</label>
+        <select id="fin-busca-colab"><option value="">Selecione...</option></select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Início</label>
+        <input type="month" id="fin-busca-colab-de">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Fim</label>
+        <input type="month" id="fin-busca-colab-ate">
+      </div>
+      <button class="btn-ms" onclick="pesquisarColaborador()">🔍 Pesquisar</button>
+    </div>
+    <div id="fin-busca-colab-result"></div>
+  </div>
+
+  <!-- Pesquisa por Fornecedor -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    🔍 Pesquisa por Fornecedor
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+      <div class="field" style="margin:0">
+        <label>Fornecedor</label>
+        <select id="fin-busca-forn"><option value="">Selecione...</option></select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Início</label>
+        <input type="month" id="fin-busca-forn-de">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Fim</label>
+        <input type="month" id="fin-busca-forn-ate">
+      </div>
+      <button class="btn-ms" onclick="pesquisarFornecedor()">🔍 Pesquisar</button>
+    </div>
+    <div id="fin-busca-forn-result"></div>
   </div>
 
   <!-- Condições de pagamento por fornecedor -->
@@ -1145,7 +1199,7 @@ function showTab(t,el){
   if(t==='entrada')renderEntradas();
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
-  if(t==='financeiro')renderFinanceiro();
+  if(t==='financeiro'){renderFinanceiro();carregarSelectsFinanceiro();}
   if(t==='historico')renderHistorico();
   if(t==='cadastro'){renderCadastro();renderOpcoes('acabamento','cad-acab-lista');renderOpcoes('tipo_sacola','cad-sacola-lista');}
 }
@@ -2227,20 +2281,24 @@ async function renderFinanceiro() {
     if (mes) { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); pd += `&data_devolucao=gte.${mes}-01&data_devolucao=lte.${mes}-${ul}`; }
 
     const devs = await sbGet('devolucoes', pd);
-    const totalPag = devs.reduce((s,d) => s+(d.valor_a_pagar||0), 0);
+    const devsPendentes = devs.filter(d => d.status_pagamento !== 'pago');
+    const totalPag = devsPendentes.reduce((s,d) => s+(d.valor_a_pagar||0), 0);
+    const totalPago = devs.filter(d=>d.status_pagamento==='pago').reduce((s,d)=>s+(d.valor_a_pagar||0),0);
 
     document.getElementById('fin-pag-pend').textContent    = 'R$ ' + totalPag.toFixed(2).replace('.',',');
-    document.getElementById('fin-pag-pend-n').textContent  = devs.length + ' devoluções';
-    document.getElementById('fin-pag-ok').textContent      = 'R$ 0,00';
-    document.getElementById('fin-pag-ok-n').textContent    = '—';
-    document.getElementById('fin-pag-tot').textContent     = 'R$ ' + totalPag.toFixed(2).replace('.',',');
+    document.getElementById('fin-pag-pend-n').textContent  = devsPendentes.length + ' devoluções';
+    document.getElementById('fin-pag-ok').textContent      = 'R$ ' + totalPago.toFixed(2).replace('.',',');
+    document.getElementById('fin-pag-ok-n').textContent    = devs.filter(d=>d.status_pagamento==='pago').length + ' pagas';
+    document.getElementById('fin-pag-tot').textContent     = 'R$ ' + (totalPag+totalPago).toFixed(2).replace('.',',');
 
-    if (!devs.length) {
-      document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento no período.</p></div>';
+    renderPagosEfetuados(devs);
+
+    if (!devsPendentes.length) {
+      document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento pendente no período.</p></div>';
     } else {
-      // Agrupa por colaborador → fornecedor/modelo
+      // Agrupa por colaborador → fornecedor/modelo (só pendentes)
       const porColab = {};
-      for (const d of devs) {
+      for (const d of devsPendentes) {
         const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
         const distObj = dist[0] || {};
         const tipo = distObj.tipo || 'rua';
@@ -2266,10 +2324,11 @@ async function renderFinanceiro() {
         const perdaPorPessoa = Math.round((d.qtde_perda    || 0) / pessoas.length);
 
         pessoas.forEach(p => {
-          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, itens: [] };
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, itens: [], devIds: [] };
           porColab[p.nome].total += valorPorPessoa;
           porColab[p.nome].qtde  += qtdePorPessoa;
           porColab[p.nome].perda += perdaPorPessoa;
+          porColab[p.nome].devIds.push(d.id);
           // Agrupa por fornecedor+modelo dentro do colaborador
           const chave = `${fornecedor}||${modelo}||${distObj.valor_milheiro||0}`;
           const item = porColab[p.nome].itens.find(i => i.chave === chave);
@@ -2287,7 +2346,7 @@ async function renderFinanceiro() {
       let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Colaborador</th><th>Tipo</th><th>Fornecedor / Modelo</th>
         <th class="r">Qtde</th><th class="r">Perdas</th><th class="r">Vlr/Mil</th>
-        <th class="r">Total a Pagar</th>
+        <th class="r">Total a Pagar</th><th></th>
       </tr></thead><tbody>`;
 
       lista.forEach(c => {
@@ -2304,6 +2363,12 @@ async function renderFinanceiro() {
             <td class="r" style="color:${item.perda>0?'#e53e3e':'#718096'}">${item.perda.toLocaleString('pt-BR')}</td>
             <td class="r" style="color:#718096;font-size:12px">R$ ${item.vlr.toFixed(2).replace('.',',')}</td>
             <td class="r" style="font-weight:700;color:#276749">R$ ${item.total.toFixed(2).replace('.',',')}</td>
+            ${idx === 0 ? `<td rowspan="${c.itens.length}" style="vertical-align:middle;text-align:center">
+              <button class="btn-ms" style="font-size:11px;padding:5px 10px;white-space:nowrap" 
+                onclick="registrarPagamento('${c.nome}',${c.total.toFixed(2)},${JSON.stringify(c.devIds||[])})">
+                💰 Pagar<br><small>R$ ${c.total.toFixed(2).replace('.',',')}</small>
+              </button>
+            </td>` : ''}
           </tr>`;
         });
         // Subtotal do colaborador se tiver mais de 1 item
@@ -2616,6 +2681,183 @@ async function toggleOpcao(id, ativo, tipo){
     await carregarOpcoes();
     renderOpcoes(tipo, tipo==='acabamento'?'cad-acab-lista':'cad-sacola-lista');
   }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+// ===== PAGAMENTOS =====
+async function registrarPagamento(nome, total, devIds){
+  if(!confirm(`Confirma pagamento de R$ ${total.toFixed(2).replace('.',',')} para ${nome}?`)) return;
+  try{
+    for(const id of devIds){
+      await sbPatch('devolucoes', id, {status_pagamento: 'pago', data_pagamento: new Date().toISOString().split('T')[0]});
+    }
+    alerta(`✅ Pagamento de R$ ${total.toFixed(2).replace('.',',')} registrado para ${nome}!`, 'success');
+    renderFinanceiro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderPagosEfetuados(devs){
+  const el = document.getElementById('fin-pagos-card');
+  const pagos = devs ? devs.filter(d => d.status_pagamento === 'pago') : [];
+  if(!pagos.length){ el.innerHTML='<div class="empty-state"><div class="ico">✅</div><p>Nenhum pagamento efetuado no período.</p></div>'; return; }
+
+  // Agrupa por colaborador
+  const porColab = {};
+  for(const d of pagos){
+    const [dist] = await sbGet('distribuicoes',`?id=eq.${d.distribuicao_id}`);
+    const nome = dist?.colaboradores || '?';
+    if(!porColab[nome]) porColab[nome] = {nome, total:0, qtde:0, data:''};
+    porColab[nome].total += d.valor_a_pagar||0;
+    porColab[nome].qtde  += d.qtde_aprovada||0;
+    porColab[nome].data   = d.data_pagamento||'';
+  }
+
+  let html=`<div class="tbl-wrap"><table class="tbl"><thead><tr>
+    <th>Colaborador</th><th>Qtde Produzida</th><th class="r">Total Pago</th><th>Data Pagamento</th>
+  </tr></thead><tbody>`;
+  Object.values(porColab).forEach(c=>{
+    const dt = c.data ? c.data.split('-').reverse().join('/') : '—';
+    html+=`<tr>
+      <td><strong>${c.nome}</strong></td>
+      <td>${c.qtde.toLocaleString('pt-BR')}</td>
+      <td class="r" style="color:#276749;font-weight:700">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+      <td>${dt}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+async function carregarSelectsFinanceiro(){
+  // Colaboradoras
+  const colabs = await sbGet('colaboradores','?ativo=eq.true&order=nome.asc');
+  const selC = document.getElementById('fin-busca-colab');
+  selC.innerHTML='<option value="">Selecione...</option>';
+  colabs.forEach(c=>{ const o=document.createElement('option'); o.value=c.nome; o.textContent=c.nome; selC.appendChild(o); });
+  // Fornecedores — pega das entradas
+  const ents = await sbGet('entradas','?order=fornecedor.asc');
+  const forns = [...new Set(ents.map(e=>e.fornecedor).filter(Boolean))];
+  const selF = document.getElementById('fin-busca-forn');
+  selF.innerHTML='<option value="">Selecione...</option>';
+  forns.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; selF.appendChild(o); });
+}
+
+async function pesquisarColaborador(){
+  const nome = document.getElementById('fin-busca-colab').value;
+  const de   = document.getElementById('fin-busca-colab-de').value;
+  const ate  = document.getElementById('fin-busca-colab-ate').value;
+  const el   = document.getElementById('fin-busca-colab-result');
+  if(!nome){ alerta('Selecione um colaborador!','error'); return; }
+  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+
+  try{
+    // Busca distribuições da colaboradora
+    const dists = await sbGet('distribuicoes',`?colaboradores=eq.${encodeURIComponent(nome)}&order=data_saida.desc`);
+    if(!dists.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro encontrado.</p></div>'; return; }
+
+    // Para cada distribuição, busca devoluções
+    const rows = [];
+    for(const d of dists){
+      const mes = d.data_saida?.slice(0,7);
+      if(de && mes < de) continue;
+      if(ate && mes > ate) continue;
+      const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}`);
+      const [ent] = await sbGet('entradas',`?id=eq.${d.entrada_id}`);
+      rows.push({
+        mes, fornecedor: ent?.fornecedor||'—', modelo: ent?.modelo||'—',
+        enviado: d.qtde_enviada||0,
+        aprovado: devs.reduce((s,x)=>s+(x.qtde_aprovada||0),0),
+        perda: devs.reduce((s,x)=>s+(x.qtde_perda||0),0),
+        valor: devs.reduce((s,x)=>s+(x.valor_a_pagar||0),0),
+        pago: devs.every(x=>x.status_pagamento==='pago')
+      });
+    }
+
+    if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro no período.</p></div>'; return; }
+
+    let html=`<table class="tbl"><thead><tr>
+      <th>Mês</th><th>Fornecedor</th><th>Modelo</th>
+      <th class="r">Enviado</th><th class="r">Aprovado</th><th class="r">Perda</th>
+      <th class="r">Total</th><th>Status</th>
+    </tr></thead><tbody>`;
+    let totalGeral=0;
+    rows.forEach(r=>{
+      totalGeral+=r.valor;
+      const [a,m]=r.mes.split('-');
+      html+=`<tr>
+        <td>${m}/${a}</td><td>${r.fornecedor}</td><td>${r.modelo}</td>
+        <td class="r">${r.enviado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749">${r.aprovado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#e53e3e">${r.perda.toLocaleString('pt-BR')}</td>
+        <td class="r" style="font-weight:700">R$ ${r.valor.toFixed(2).replace('.',',')}</td>
+        <td><span class="badge ${r.pago?'bg-green':'bg-yellow'}">${r.pago?'✅ Pago':'⏳ Pendente'}</span></td>
+      </tr>`;
+    });
+    html+=`<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
+      <td colspan="6" style="font-weight:700;text-align:right">TOTAL</td>
+      <td class="r" style="font-weight:900;color:#276749">R$ ${totalGeral.toFixed(2).replace('.',',')}</td><td></td>
+    </tr></tbody></table>`;
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
+}
+
+async function pesquisarFornecedor(){
+  const forn = document.getElementById('fin-busca-forn').value;
+  const de   = document.getElementById('fin-busca-forn-de').value;
+  const ate  = document.getElementById('fin-busca-forn-ate').value;
+  const el   = document.getElementById('fin-busca-forn-result');
+  if(!forn){ alerta('Selecione um fornecedor!','error'); return; }
+  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+
+  try{
+    const ents = await sbGet('entradas',`?fornecedor=eq.${encodeURIComponent(forn)}`);
+    if(!ents.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
+
+    // Agrupa por mês
+    const porMes = {};
+    for(const ent of ents){
+      const dists = await sbGet('distribuicoes',`?entrada_id=eq.${ent.id}`);
+      for(const d of dists){
+        const mes = d.data_saida?.slice(0,7)||'—';
+        if(de && mes < de) continue;
+        if(ate && mes > ate) continue;
+        if(!porMes[mes]) porMes[mes]={mes, enviado:0, aprovado:0, perda:0, valor:0, modelos:new Set()};
+        porMes[mes].enviado  += d.qtde_enviada||0;
+        porMes[mes].aprovado += d.qtde_aprovada||0;
+        porMes[mes].perda    += d.qtde_perda||0;
+        porMes[mes].modelos.add(ent.modelo||ent.tipo_sacola||'—');
+        const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}`);
+        // Valor a receber = qtde_aprovada * valor_milheiro / 1000
+        porMes[mes].valor += (d.qtde_aprovada||0) * (ent.valor_milheiro||0) / 1000;
+      }
+    }
+
+    const meses = Object.values(porMes).sort((a,b)=>a.mes>b.mes?-1:1);
+    if(!meses.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro no período.</p></div>'; return; }
+
+    let html=`<table class="tbl"><thead><tr>
+      <th>Mês</th><th>Modelos</th>
+      <th class="r">Enviado</th><th class="r">Aprovado</th><th class="r">Perda</th>
+      <th class="r">Valor a Receber</th>
+    </tr></thead><tbody>`;
+    let totalGeral=0;
+    meses.forEach(r=>{
+      totalGeral+=r.valor;
+      const [a,m]=r.mes.split('-');
+      html+=`<tr>
+        <td>${m}/${a}</td>
+        <td style="font-size:12px;color:#4a5568">${[...r.modelos].join(', ')}</td>
+        <td class="r">${r.enviado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749">${r.aprovado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#e53e3e">${r.perda.toLocaleString('pt-BR')}</td>
+        <td class="r" style="font-weight:700">R$ ${r.valor.toFixed(2).replace('.',',')}</td>
+      </tr>`;
+    });
+    html+=`<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
+      <td colspan="5" style="font-weight:700;text-align:right">TOTAL</td>
+      <td class="r" style="font-weight:900;color:#276749">R$ ${totalGeral.toFixed(2).replace('.',',')}</td>
+    </tr></tbody></table>`;
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
 }
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));</script>
