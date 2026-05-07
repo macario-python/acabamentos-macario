@@ -2238,38 +2238,55 @@ async function renderFinanceiro() {
     if (!devs.length) {
       document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento no período.</p></div>';
     } else {
-      // Agrupa por colaborador
+      // Agrupa por colaborador → fornecedor/modelo
       const porColab = {};
       for (const d of devs) {
         const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
         const distObj = dist[0] || {};
-        const nome = distObj.colaboradores || 'Desconhecido';
         const tipo = distObj.tipo || 'rua';
 
-        // Se for interno com múltiplos, divide igualmente
-        let pessoas = [{ nome, tipo }];
+        // Busca entrada para pegar fornecedor e modelo
+        let fornecedor = '—', modelo = '—';
+        if (distObj.entrada_id) {
+          const [ent] = await sbGet('entradas', `?id=eq.${distObj.entrada_id}`);
+          if (ent) { fornecedor = ent.fornecedor || '—'; modelo = ent.modelo || ent.tipo_sacola || '—'; }
+        }
+
+        // Se interno com múltiplos, divide igualmente
+        let pessoas = [{ nome: distObj.colaboradores || 'Desconhecido', tipo }];
         if (tipo === 'interno' && distObj.colaboradores_internos) {
           try {
             const internos = JSON.parse(distObj.colaboradores_internos);
-            if (internos.length > 1) {
-              pessoas = internos.map(i => ({ nome: i.nome, tipo: 'interno' }));
-            }
+            if (internos.length > 1) pessoas = internos.map(i => ({ nome: i.nome, tipo: 'interno' }));
           } catch(e) {}
         }
 
         const valorPorPessoa = (d.valor_a_pagar || 0) / pessoas.length;
+        const qtdePorPessoa  = Math.round((d.qtde_aprovada || 0) / pessoas.length);
+        const perdaPorPessoa = Math.round((d.qtde_perda    || 0) / pessoas.length);
+
         pessoas.forEach(p => {
-          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0 };
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, itens: [] };
           porColab[p.nome].total += valorPorPessoa;
-          porColab[p.nome].qtde  += Math.round((d.qtde_aprovada || 0) / pessoas.length);
-          porColab[p.nome].perda += Math.round((d.qtde_perda    || 0) / pessoas.length);
+          porColab[p.nome].qtde  += qtdePorPessoa;
+          porColab[p.nome].perda += perdaPorPessoa;
+          // Agrupa por fornecedor+modelo dentro do colaborador
+          const chave = `${fornecedor}||${modelo}||${distObj.valor_milheiro||0}`;
+          const item = porColab[p.nome].itens.find(i => i.chave === chave);
+          if (item) {
+            item.qtde  += qtdePorPessoa;
+            item.perda += perdaPorPessoa;
+            item.total += valorPorPessoa;
+          } else {
+            porColab[p.nome].itens.push({ chave, fornecedor, modelo, vlr: distObj.valor_milheiro||0, qtde: qtdePorPessoa, perda: perdaPorPessoa, total: valorPorPessoa });
+          }
         });
       }
 
       const lista = Object.values(porColab).sort((a,b) => b.total - a.total);
       let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
-        <th>Colaborador</th><th>Tipo</th>
-        <th class="r">Qtde Produzida</th><th class="r">Perdas</th>
+        <th>Colaborador</th><th>Tipo</th><th>Fornecedor / Modelo</th>
+        <th class="r">Qtde</th><th class="r">Perdas</th><th class="r">Vlr/Mil</th>
         <th class="r">Total a Pagar</th>
       </tr></thead><tbody>`;
 
@@ -2277,18 +2294,29 @@ async function renderFinanceiro() {
         const tipoBadge = c.tipo === 'interno'
           ? '<span class="badge bg-purple">🏭 Interno</span>'
           : '<span class="badge bg-blue">👥 Rua</span>';
-        html += `<tr>
-          <td><strong>${c.nome}</strong></td>
-          <td>${tipoBadge}</td>
-          <td class="r" style="font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td>
-          <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
-          <td class="r" style="font-weight:800;color:#276749;font-size:14px">R$ ${c.total.toFixed(2).replace('.',',')}</td>
-        </tr>`;
+        // Primeira linha com nome e tipo
+        c.itens.forEach((item, idx) => {
+          html += `<tr ${idx === 0 ? '' : 'style="border-top:none"'}>
+            ${idx === 0 ? `<td rowspan="${c.itens.length}" style="vertical-align:top;font-weight:700">${c.nome}</td>
+            <td rowspan="${c.itens.length}" style="vertical-align:top">${tipoBadge}</td>` : ''}
+            <td style="font-size:12px;color:#4a5568">${item.fornecedor} — ${item.modelo}</td>
+            <td class="r">${item.qtde.toLocaleString('pt-BR')}</td>
+            <td class="r" style="color:${item.perda>0?'#e53e3e':'#718096'}">${item.perda.toLocaleString('pt-BR')}</td>
+            <td class="r" style="color:#718096;font-size:12px">R$ ${item.vlr.toFixed(2).replace('.',',')}</td>
+            <td class="r" style="font-weight:700;color:#276749">R$ ${item.total.toFixed(2).replace('.',',')}</td>
+          </tr>`;
+        });
+        // Subtotal do colaborador se tiver mais de 1 item
+        if (c.itens.length > 1) {
+          html += `<tr style="background:#f7fafc;border-top:1px solid #e2e8f0">
+            <td colspan="4" style="text-align:right;font-size:12px;color:#718096">Subtotal ${c.nome}</td>
+            <td class="r" style="font-weight:800;color:#276749">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+          </tr>`;
+        }
       });
 
-      // Linha total
       html += `<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
-        <td colspan="4" style="font-weight:700;text-align:right;color:#276749">TOTAL A PAGAR</td>
+        <td colspan="6" style="font-weight:700;text-align:right;color:#276749">TOTAL A PAGAR</td>
         <td class="r" style="font-weight:900;color:#276749;font-size:15px">R$ ${totalPag.toFixed(2).replace('.',',')}</td>
       </tr>`;
       html += '</tbody></table></div>';
