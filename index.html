@@ -727,29 +727,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
     <div id="fin-busca-colab-result"></div>
   </div>
 
-  <!-- Pesquisa por Fornecedor -->
-  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
-    🔍 Pesquisa por Fornecedor
-  </div>
-  <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
-      <div class="field" style="margin:0">
-        <label>Fornecedor</label>
-        <select id="fin-busca-forn"><option value="">Selecione...</option></select>
-      </div>
-      <div class="field" style="margin:0">
-        <label>Mês Início</label>
-        <input type="month" id="fin-busca-forn-de">
-      </div>
-      <div class="field" style="margin:0">
-        <label>Mês Fim</label>
-        <input type="month" id="fin-busca-forn-ate">
-      </div>
-      <button class="btn-ms" onclick="pesquisarFornecedor()">🔍 Pesquisar</button>
-    </div>
-    <div id="fin-busca-forn-result"></div>
-  </div>
-
   <!-- Condições de pagamento por fornecedor -->
   <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
     📅 Condições de Pagamento por Fornecedor
@@ -2728,17 +2705,10 @@ async function renderPagosEfetuados(devs){
 }
 
 async function carregarSelectsFinanceiro(){
-  // Colaboradoras
   const colabs = await sbGet('colaboradores','?ativo=eq.true&order=nome.asc');
   const selC = document.getElementById('fin-busca-colab');
   selC.innerHTML='<option value="">Selecione...</option>';
   colabs.forEach(c=>{ const o=document.createElement('option'); o.value=c.nome; o.textContent=c.nome; selC.appendChild(o); });
-  // Fornecedores — pega das entradas
-  const ents = await sbGet('entradas','?order=fornecedor.asc');
-  const forns = [...new Set(ents.map(e=>e.fornecedor).filter(Boolean))];
-  const selF = document.getElementById('fin-busca-forn');
-  selF.innerHTML='<option value="">Selecione...</option>';
-  forns.forEach(f=>{ const o=document.createElement('option'); o.value=f; o.textContent=f; selF.appendChild(o); });
 }
 
 async function pesquisarColaborador(){
@@ -2750,46 +2720,55 @@ async function pesquisarColaborador(){
   el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
 
   try{
-    // Busca distribuições da colaboradora
     const dists = await sbGet('distribuicoes',`?colaboradores=eq.${encodeURIComponent(nome)}&order=data_saida.desc`);
     if(!dists.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro encontrado.</p></div>'; return; }
 
-    // Para cada distribuição, busca devoluções
     const rows = [];
     for(const d of dists){
-      const mes = d.data_saida?.slice(0,7);
+      const mes = d.data_saida?.slice(0,7)||'';
       if(de && mes < de) continue;
       if(ate && mes > ate) continue;
-      const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}`);
+      // Só devoluções conferidas
+      const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}&conferido=eq.true`);
+      if(!devs.length) continue;
       const [ent] = await sbGet('entradas',`?id=eq.${d.entrada_id}`);
+      const aprovado = devs.reduce((s,x)=>s+(x.qtde_aprovada||0),0);
+      const perda    = devs.reduce((s,x)=>s+(x.qtde_perda||0),0);
+      const valor    = devs.reduce((s,x)=>s+(x.valor_a_pagar||0),0);
+      const pago     = devs.every(x=>x.status_pagamento==='pago');
       rows.push({
-        mes, fornecedor: ent?.fornecedor||'—', modelo: ent?.modelo||'—',
-        enviado: d.qtde_enviada||0,
-        aprovado: devs.reduce((s,x)=>s+(x.qtde_aprovada||0),0),
-        perda: devs.reduce((s,x)=>s+(x.qtde_perda||0),0),
-        valor: devs.reduce((s,x)=>s+(x.valor_a_pagar||0),0),
-        pago: devs.every(x=>x.status_pagamento==='pago')
+        mes, fornecedor: ent?.fornecedor||'—', modelo: ent?.modelo||ent?.tipo_sacola||'—',
+        enviado: d.qtde_enviada||0, aprovado, perda, valor, pago
       });
     }
 
-    if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro no período.</p></div>'; return; }
+    if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum serviço conferido no período.</p></div>'; return; }
 
-    let html=`<table class="tbl"><thead><tr>
+    let totalGeral=0, totalPago=0, totalPend=0;
+    rows.forEach(r=>{ totalGeral+=r.valor; if(r.pago) totalPago+=r.valor; else totalPend+=r.valor; });
+
+    let html=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div class="p-box"><label>Total Produzido</label><div class="val">R$ ${totalGeral.toFixed(2).replace('.',',')}</div></div>
+      <div class="p-box"><label>✅ Pago</label><div class="val" style="color:#276749">R$ ${totalPago.toFixed(2).replace('.',',')}</div></div>
+      <div class="p-box"><label>⏳ Pendente</label><div class="val" style="color:#e53e3e">R$ ${totalPend.toFixed(2).replace('.',',')}</div></div>
+    </div>
+    <table class="tbl"><thead><tr>
       <th>Mês</th><th>Fornecedor</th><th>Modelo</th>
       <th class="r">Enviado</th><th class="r">Aprovado</th><th class="r">Perda</th>
-      <th class="r">Total</th><th>Status</th>
+      <th class="r">Valor</th><th>Status</th>
     </tr></thead><tbody>`;
-    let totalGeral=0;
+
     rows.forEach(r=>{
-      totalGeral+=r.valor;
-      const [a,m]=r.mes.split('-');
+      const [a,m] = r.mes.split('-');
       html+=`<tr>
-        <td>${m}/${a}</td><td>${r.fornecedor}</td><td>${r.modelo}</td>
+        <td>${m}/${a}</td><td>${r.fornecedor}</td>
+        <td style="font-size:12px">${r.modelo}</td>
         <td class="r">${r.enviado.toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${r.aprovado.toLocaleString('pt-BR')}</td>
-        <td class="r" style="color:#e53e3e">${r.perda.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:${r.perda>0?'#e53e3e':'#718096'}">${r.perda.toLocaleString('pt-BR')}</td>
         <td class="r" style="font-weight:700">R$ ${r.valor.toFixed(2).replace('.',',')}</td>
-        <td><span class="badge ${r.pago?'bg-green':'bg-yellow'}">${r.pago?'✅ Pago':'⏳ Pendente'}</span></td>
+        <td><span class="badge ${r.pago?'bg-green':'bg-yellow'}">${r.pago?'✅ Pago':'⏳ A Pagar'}</span></td>
       </tr>`;
     });
     html+=`<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
@@ -2800,65 +2779,7 @@ async function pesquisarColaborador(){
   }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
 }
 
-async function pesquisarFornecedor(){
-  const forn = document.getElementById('fin-busca-forn').value;
-  const de   = document.getElementById('fin-busca-forn-de').value;
-  const ate  = document.getElementById('fin-busca-forn-ate').value;
-  const el   = document.getElementById('fin-busca-forn-result');
-  if(!forn){ alerta('Selecione um fornecedor!','error'); return; }
-  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
 
-  try{
-    const ents = await sbGet('entradas',`?fornecedor=eq.${encodeURIComponent(forn)}`);
-    if(!ents.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhuma entrada encontrada.</p></div>'; return; }
-
-    // Agrupa por mês
-    const porMes = {};
-    for(const ent of ents){
-      const dists = await sbGet('distribuicoes',`?entrada_id=eq.${ent.id}`);
-      for(const d of dists){
-        const mes = d.data_saida?.slice(0,7)||'—';
-        if(de && mes < de) continue;
-        if(ate && mes > ate) continue;
-        if(!porMes[mes]) porMes[mes]={mes, enviado:0, aprovado:0, perda:0, valor:0, modelos:new Set()};
-        porMes[mes].enviado  += d.qtde_enviada||0;
-        porMes[mes].aprovado += d.qtde_aprovada||0;
-        porMes[mes].perda    += d.qtde_perda||0;
-        porMes[mes].modelos.add(ent.modelo||ent.tipo_sacola||'—');
-        const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}`);
-        // Valor a receber = qtde_aprovada * valor_milheiro / 1000
-        porMes[mes].valor += (d.qtde_aprovada||0) * (ent.valor_milheiro||0) / 1000;
-      }
-    }
-
-    const meses = Object.values(porMes).sort((a,b)=>a.mes>b.mes?-1:1);
-    if(!meses.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro no período.</p></div>'; return; }
-
-    let html=`<table class="tbl"><thead><tr>
-      <th>Mês</th><th>Modelos</th>
-      <th class="r">Enviado</th><th class="r">Aprovado</th><th class="r">Perda</th>
-      <th class="r">Valor a Receber</th>
-    </tr></thead><tbody>`;
-    let totalGeral=0;
-    meses.forEach(r=>{
-      totalGeral+=r.valor;
-      const [a,m]=r.mes.split('-');
-      html+=`<tr>
-        <td>${m}/${a}</td>
-        <td style="font-size:12px;color:#4a5568">${[...r.modelos].join(', ')}</td>
-        <td class="r">${r.enviado.toLocaleString('pt-BR')}</td>
-        <td class="r" style="color:#276749">${r.aprovado.toLocaleString('pt-BR')}</td>
-        <td class="r" style="color:#e53e3e">${r.perda.toLocaleString('pt-BR')}</td>
-        <td class="r" style="font-weight:700">R$ ${r.valor.toFixed(2).replace('.',',')}</td>
-      </tr>`;
-    });
-    html+=`<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
-      <td colspan="5" style="font-weight:700;text-align:right">TOTAL</td>
-      <td class="r" style="font-weight:900;color:#276749">R$ ${totalGeral.toFixed(2).replace('.',',')}</td>
-    </tr></tbody></table>`;
-    el.innerHTML=html;
-  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
-}
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));</script>
 </body>
