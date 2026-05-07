@@ -991,7 +991,8 @@ async function renderPainel() {
     // Totais gerais
     const totalEntradas = entradas.length;
     const totalUnid     = entradas.reduce((s,e) => s+(e.qtde_total||0), 0);
-    const totalRua      = entradas.reduce((s,e) => s+((e.qtde_distribuida||0)-(e.qtde_feita||0)), 0);
+    // Na Rua = só distribuições pendente/parcial (exclui concluido mesmo com perdas)
+    const totalRua      = distribuicoes.reduce((s,d) => s+((d.qtde_enviada||0)-(d.qtde_retornada||0)), 0);
     const totalProntas  = entradas.reduce((s,e) => s+(e.qtde_feita||0), 0);
     const totalDisp     = entradas.reduce((s,e) => s+(e.qtde_disponivel||0), 0);
 
@@ -1037,7 +1038,9 @@ async function renderPainel() {
           <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
             <span>Total: <strong>${total.toLocaleString('pt-BR')}</strong></span>
             <span style="color:#276749">Prontas: <strong>${feito.toLocaleString('pt-BR')}</strong></span>
-            <span style="color:#2b6cb0">Na Rua: <strong>${((e.qtde_distribuida||0)-(feito)).toLocaleString('pt-BR')}</strong></span>
+            const distsEnt = distribuicoes.filter(d => d.entrada_id === e.id);
+            const naRuaEnt = distsEnt.reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0);
+            <span style="color:#2b6cb0">Na Rua: <strong>${naRuaEnt.toLocaleString('pt-BR')}</strong></span>
             <span style="color:#92400e">A Fazer: <strong>${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</strong></span>
           </div>
           <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden">
@@ -1061,7 +1064,9 @@ async function renderPainel() {
         if (!porForn[e.fornecedor]) porForn[e.fornecedor] = { itens: [], totalUn: 0, totalRua: 0, totalProntas: 0, totalDisp: 0, totalVal: 0 };
         porForn[e.fornecedor].itens.push(e);
         porForn[e.fornecedor].totalUn      += e.qtde_total || 0;
-        porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
+        // Na Rua por fornecedor = distribuições pendente/parcial desta entrada
+        const distsForn = distribuicoes.filter(d => d.entrada_id === e.id);
+        porForn[e.fornecedor].totalRua     += distsForn.reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0);
         porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
         porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
         porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro||0);
