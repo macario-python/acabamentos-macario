@@ -1986,6 +1986,14 @@ async function renderDistribuicoes() {
           <button onclick="editarDistribuicao(${d.id},${d.qtde_enviada||0},'${d.data_saida||''}',${d.valor_milheiro||0})" 
             style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
         </td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+}
+
+// ===== CONFERÊNCIA =====
 let confDistAtual = null;
 
 async function carregarDistribuicoesSelect() {
