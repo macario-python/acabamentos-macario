@@ -1038,9 +1038,7 @@ async function renderPainel() {
           <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
             <span>Total: <strong>${total.toLocaleString('pt-BR')}</strong></span>
             <span style="color:#276749">Prontas: <strong>${feito.toLocaleString('pt-BR')}</strong></span>
-            const distsEnt = distribuicoes.filter(d => d.entrada_id === e.id);
-            const naRuaEnt = distsEnt.reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0);
-            <span style="color:#2b6cb0">Na Rua: <strong>${naRuaEnt.toLocaleString('pt-BR')}</strong></span>
+            <span style="color:#2b6cb0">Na Rua: <strong>${distribuicoes.filter(d=>d.entrada_id===e.id).reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0).toLocaleString('pt-BR')}</strong></span>
             <span style="color:#92400e">A Fazer: <strong>${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</strong></span>
           </div>
           <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden">
