@@ -821,6 +821,78 @@ table.tbl tbody tr:hover{background:#fafbfc}
 </div><!-- end content -->
 
 <!-- MODALS -->
+<!-- MODAL EDITAR ENTRADA -->
+<div class="modal-overlay hidden" id="modal-edit-entrada">
+  <div class="modal">
+    <h2>✏️ Editar Entrada</h2>
+    <input type="hidden" id="edit-ent-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Qtde Total</label><input type="number" id="edit-ent-qtde" min="0"></div>
+      <div class="field"><label>Vlr/Mil (R$)</label><input type="number" id="edit-ent-vlr" step="0.01" min="0"></div>
+      <div class="field"><label>Prazo Entrega</label><input type="date" id="edit-ent-prazo"></div>
+      <div class="field"><label>Status</label>
+        <select id="edit-ent-status">
+          <option value="aberto">Aberto</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Condição Pagamento</label><input type="text" id="edit-ent-cond"></div>
+    <div class="field"><label>Observação</label><input type="text" id="edit-ent-obs"></div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-entrada')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoEntrada()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DISTRIBUIÇÃO -->
+<div class="modal-overlay hidden" id="modal-edit-dist">
+  <div class="modal">
+    <h2>✏️ Editar Distribuição</h2>
+    <input type="hidden" id="edit-dist-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Data Saída</label><input type="date" id="edit-dist-data"></div>
+      <div class="field"><label>Qtde Enviada</label><input type="number" id="edit-dist-qtde" min="0"></div>
+      <div class="field"><label>Vlr/Mil (R$)</label><input type="number" id="edit-dist-vlr" step="0.01" min="0"></div>
+      <div class="field"><label>Status</label>
+        <select id="edit-dist-status">
+          <option value="pendente">Pendente</option>
+          <option value="parcial">Parcial</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-dist')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoDist()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DEVOLUÇÃO -->
+<div class="modal-overlay hidden" id="modal-edit-dev">
+  <div class="modal">
+    <h2>✏️ Editar Devolução</h2>
+    <input type="hidden" id="edit-dev-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Data Devolução</label><input type="date" id="edit-dev-data"></div>
+      <div class="field"><label>Qtde Devolvida</label><input type="number" id="edit-dev-dev" min="0"></div>
+      <div class="field"><label>Qtde Aprovada</label><input type="number" id="edit-dev-aprov" min="0"></div>
+      <div class="field"><label>Qtde Perda</label><input type="number" id="edit-dev-perda" min="0"></div>
+    </div>
+    <div class="g2" style="gap:10px">
+      <div class="field"><label>Motivo Perda</label><input type="text" id="edit-dev-motivo"></div>
+      <div class="field"><label>Valor a Pagar (R$)</label><input type="number" id="edit-dev-valor" step="0.01" min="0"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-dev')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoDev()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="modal-edit-colab">
   <div class="modal">
     <h2>✏️ Editar Colaboradora</h2>
@@ -1527,7 +1599,10 @@ async function renderEntradas() {
         <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
         <td>${statusBadge}</td>
         <td>
-          <button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>
+          <div style="display:flex;gap:4px">
+            <button onclick="editarEntrada(${e.id})" style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+            <button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>
+          </div>
         </td>
       </tr>`;
     });
@@ -1538,6 +1613,88 @@ async function renderEntradas() {
 }
 
 async function delEntrada(id){if(!confirm('Excluir esta entrada?'))return;await sbDelete('entradas',id);renderEntradas();alerta('Entrada excluída.','success')}
+
+async function editarEntrada(id){
+  const [e] = await sbGet('entradas',`?id=eq.${id}`);
+  if(!e) return;
+  document.getElementById('edit-ent-id').value    = id;
+  document.getElementById('edit-ent-qtde').value  = e.qtde_total||0;
+  document.getElementById('edit-ent-vlr').value   = e.valor_milheiro||0;
+  document.getElementById('edit-ent-prazo').value = e.data_prazo||'';
+  document.getElementById('edit-ent-status').value= e.status||'aberto';
+  document.getElementById('edit-ent-cond').value  = e.condicao_pagamento||'';
+  document.getElementById('edit-ent-obs').value   = e.observacao||'';
+  abrirModal('modal-edit-entrada');
+}
+
+async function salvarEdicaoEntrada(){
+  const id    = document.getElementById('edit-ent-id').value;
+  const qtde  = parseInt(document.getElementById('edit-ent-qtde').value)||0;
+  const vlr   = parseFloat(document.getElementById('edit-ent-vlr').value)||0;
+  const prazo = document.getElementById('edit-ent-prazo').value;
+  const status= document.getElementById('edit-ent-status').value;
+  const cond  = document.getElementById('edit-ent-cond').value.trim();
+  const obs   = document.getElementById('edit-ent-obs').value.trim();
+  try{
+    await sbPatch('entradas', id, {qtde_total:qtde, valor_milheiro:vlr, data_prazo:prazo, status, condicao_pagamento:cond, observacao:obs});
+    alerta('Entrada atualizada!','success');
+    fecharModal('modal-edit-entrada');
+    renderEntradas();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+function editarDistribuicao(id, qtde, data, vlr){
+  document.getElementById('edit-dist-id').value   = id;
+  document.getElementById('edit-dist-qtde').value = qtde;
+  document.getElementById('edit-dist-data').value = data;
+  document.getElementById('edit-dist-vlr').value  = vlr;
+  abrirModal('modal-edit-dist');
+  // Busca status atual
+  sbGet('distribuicoes',`?id=eq.${id}`).then(([d])=>{
+    if(d) document.getElementById('edit-dist-status').value = d.status||'pendente';
+  });
+}
+
+async function salvarEdicaoDist(){
+  const id    = document.getElementById('edit-dist-id').value;
+  const qtde  = parseInt(document.getElementById('edit-dist-qtde').value)||0;
+  const data  = document.getElementById('edit-dist-data').value;
+  const vlr   = parseFloat(document.getElementById('edit-dist-vlr').value)||0;
+  const status= document.getElementById('edit-dist-status').value;
+  try{
+    await sbPatch('distribuicoes', id, {qtde_enviada:qtde, data_saida:data, valor_milheiro:vlr, status});
+    alerta('Distribuição atualizada!','success');
+    fecharModal('modal-edit-dist');
+    renderDistribuicoes();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+function editarDevolucao(id, dev, aprov, perda, motivo, valor, data){
+  document.getElementById('edit-dev-id').value     = id;
+  document.getElementById('edit-dev-dev').value    = dev;
+  document.getElementById('edit-dev-aprov').value  = aprov;
+  document.getElementById('edit-dev-perda').value  = perda;
+  document.getElementById('edit-dev-motivo').value = motivo;
+  document.getElementById('edit-dev-valor').value  = valor;
+  document.getElementById('edit-dev-data').value   = data;
+  abrirModal('modal-edit-dev');
+}
+
+async function salvarEdicaoDev(){
+  const id    = document.getElementById('edit-dev-id').value;
+  const dev   = parseInt(document.getElementById('edit-dev-dev').value)||0;
+  const aprov = parseInt(document.getElementById('edit-dev-aprov').value)||0;
+  const perda = parseInt(document.getElementById('edit-dev-perda').value)||0;
+  const motivo= document.getElementById('edit-dev-motivo').value.trim();
+  const valor = parseFloat(document.getElementById('edit-dev-valor').value)||0;
+  const data  = document.getElementById('edit-dev-data').value;
+  try{
+    await sbPatch('devolucoes', id, {qtde_devolvida:dev, qtde_aprovada:aprov, qtde_perda:perda, motivo_perda:motivo||null, valor_a_pagar:valor, data_devolucao:data});
+    alerta('Devolução atualizada!','success');
+    fecharModal('modal-edit-dev');
+    renderConferencias();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
 
 // ===== DISTRIBUIÇÃO =====
 let distEntradaAtual = null;
@@ -1825,14 +1982,10 @@ async function renderDistribuicoes() {
         <td class="r">R$ ${(d.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td class="r" style="font-weight:700;color:#276749">R$ ${total.toFixed(2).replace('.',',')}</td>
         <td>${statusBadge}</td>
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
-}
-
-// ===== CONFERÊNCIA =====
+        <td>
+          <button onclick="editarDistribuicao(${d.id},${d.qtde_enviada||0},'${d.data_saida||''}',${d.valor_milheiro||0})" 
+            style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+        </td>
 let confDistAtual = null;
 
 async function carregarDistribuicoesSelect() {
@@ -2071,7 +2224,7 @@ async function renderConferencias() {
     let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
       <th>Data Dev.</th><th>Colaborador</th><th class="r">Devolvido</th>
       <th class="r">Aprovado</th><th class="r">Perda</th><th>Motivo</th>
-      <th class="r">Vlr Pagar</th><th>Status</th>
+      <th class="r">Vlr Pagar</th><th>Status</th><th></th>
     </tr></thead><tbody>`;
 
     for (const d of lista) {
@@ -2090,6 +2243,10 @@ async function renderConferencias() {
         <td style="font-size:11px">${d.motivo_perda || '—'}</td>
         <td class="r" style="font-weight:700;color:#276749">R$ ${(d.valor_a_pagar||0).toFixed(2).replace('.',',')}</td>
         <td>${statusBadge}</td>
+        <td>
+          <button onclick="editarDevolucao(${d.id},${d.qtde_devolvida||0},${d.qtde_aprovada||0},${d.qtde_perda||0},'${d.motivo_perda||''}',${d.valor_a_pagar||0},'${d.data_devolucao||''}')"
+            style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+        </td>
       </tr>`;
     }
     html += '</tbody></table></div>';
