@@ -1,0 +1,27 @@
+**Aulas e cursos online**
+
+* Codecademy: Curso de Python online com exercícios e desafios.
+* Coursera: Cursos de Python ofertados por universidades e instituições renomadas, como a Universidade de Michigan e o Instituto de
+Tecnologia de Massachusetts (MIT).
+* edX: Cursos de Python ofertados por universidades e instituições renomadas, como a Harvard University e a MIT.
+* Python.org: Aulas online oficialmente oferecidas pela Fundação Python.
+
+**Livros**
+
+* "Python Crash Course" de Eric Matthes (online)
+* "Automate the Boring Stuff with Python" de Al Sweigart (online)
+* "Python for Data Analysis" de Wes McKinney (online)
+* "Learning Python" de Mark Lutz (livro)
+
+**Recursos online**
+
+* W3Schools: Recursos e tutoriais para aprender Python, incluindo exemplos e códigos.
+* GeeksforGeeks: Artigos e tutoriais sobre programação em geral, com foco em Python.
+* Real Python: Tutoriais e recursos para aprender Python, incluindo artigos, vídeos e códigos.
+
+**Comunidades online**
+
+* Reddit (r/learnpython): Comunidade online de aprendizado de Python, com membros experientes prontos a ajudar.
+* Stack Overflow (tag: python): Fórum de perguntas e respostas para programação em geral, incluindo Python.
+
+Esses recursos devem ser úteis para você começar a estudar Python. Boa sorte!

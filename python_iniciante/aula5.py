@@ -1,0 +1,13 @@
+nome_lanche1 = input("Nome do primeiro lanche: ")
+preco_custo1 = float(input("Custo do primeiro lanche: R$ "))
+nome_lanche2 = input("Nome do segundo lanche: ")
+preco_custo2 = float(input("Custo do segundo lanche: R$ "))
+nome_lanche3 = input("Nome do terceiro lanhe: ")
+preco_custo3 = float(input("Custo do Terceiro lanche: "))
+
+print(f"\nLanche: {nome_lanche1}")
+print(f"Custo: {preco_custo1:.2f}")
+print(f"\nLanche: {nome_lanche2}")
+print(f"Custo: {preco_custo2:.2f}")
+print(f"\nLanche: {nome_lanche3}")
+print(f"Custo: {preco_custo3:.2f}")

@@ -1,0 +1,66 @@
+
+
+=== CHECKLIST REALIZADO EM 07/04/2026 23:32 ===
+RESPONSÁVEL: Renato
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: FEITO
+- Verificar carne: NÃO FEITO
+
+
+=== CHECKLIST REALIZADO EM 08/04/2026 11:31 ===
+RESPONSÁVEL: Rhuan
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: FEITO
+- Verificar carne: NÃO FEITO
+
+
+=== CHECKLIST REALIZADO EM 08/04/2026 11:32 ===
+RESPONSÁVEL: rhuan
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: NÃO FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: NÃO FEITO
+- Verificar carne: NÃO FEITO
+
+
+=== CHECKLIST REALIZADO EM 08/04/2026 11:36 ===
+RESPONSÁVEL: Raul
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: FEITO
+- Verificar carne: NÃO FEITO
+
+
+=== CHECKLIST REALIZADO EM 08/04/2026 12:59 ===
+RESPONSÁVEL: Rhuan
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: FEITO
+- Verificar carne: FEITO
+
+
+=== CHECKLIST REALIZADO EM 13/04/2026 16:04 ===
+RESPONSÁVEL: RAUL
+-----------------------------------
+[COZINHA]
+- Ligar as chapas: FEITO
+- Conferir molhos: NÃO FEITO
+[ESTOQUE]
+- Conferir pães: FEITO
+- Verificar carne: FEITO
