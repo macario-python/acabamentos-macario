@@ -234,6 +234,7 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="tab" onclick="showTab('conferencia',this)">✅ Conferência</div>
   <div class="tab" onclick="showTab('financeiro',this)">💰 Financeiro</div>
   <div class="tab" onclick="showTab('historico',this)">🕐 Histórico</div>
+  <div class="tab" onclick="showTab('cadastro',this)">⚙️ Cadastro</div>
 </div>
 
 <div class="content">
@@ -349,11 +350,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <label>Tipo de Sacola <span class="req">*</span></label>
         <select id="ent-tipo">
           <option value="">Selecione...</option>
-          <option>Saco</option>
-          <option>Sacola</option>
-          <option>Garrafa</option>
-          <option>Garfinhos</option>
-          <option>Porta Talher</option>
         </select>
       </div>
       <div class="field">
@@ -368,13 +364,6 @@ table.tbl tbody tr:hover{background:#fafbfc}
         <label>Acabamento</label>
         <select id="ent-acabamento">
           <option value="">—</option>
-          <option>Com alça colada</option>
-          <option>Sem alça</option>
-          <option>Com cordão</option>
-          <option>Sem cordão</option>
-          <option>Com ilhós</option>
-          <option>Sem ilhós</option>
-          <option>Alça torcida</option>
         </select>
       </div>
       <div class="field"><label>Modelo / Descrição <span class="req">*</span></label><input type="text" id="ent-modelo" placeholder="Ex: JustBurguer G29"></div>
@@ -703,8 +692,39 @@ table.tbl tbody tr:hover{background:#fafbfc}
   </div>
 
   <div class="card">
-    <div class="card-title">Por Colaborador</div>
+    <div class="card-title">Por Colaborador — A Pagar</div>
     <div id="fin-pag-card"><div class="empty-state"><div class="ico">💸</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- Pagamentos Efetuados -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    ✅ Pagamentos Efetuados
+  </div>
+  <div class="card">
+    <div id="fin-pagos-card"><div class="empty-state"><div class="ico">✅</div><p>Aplique os filtros para ver.</p></div></div>
+  </div>
+
+  <!-- Pesquisa por Colaborador -->
+  <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718096;margin:16px 0 10px;padding-left:2px">
+    🔍 Pesquisa por Colaborador
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:14px">
+      <div class="field" style="margin:0">
+        <label>Colaborador</label>
+        <select id="fin-busca-colab"><option value="">Selecione...</option></select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Início</label>
+        <input type="month" id="fin-busca-colab-de">
+      </div>
+      <div class="field" style="margin:0">
+        <label>Mês Fim</label>
+        <input type="month" id="fin-busca-colab-ate">
+      </div>
+      <button class="btn-ms" onclick="pesquisarColaborador()">🔍 Pesquisar</button>
+    </div>
+    <div id="fin-busca-colab-result"></div>
   </div>
 
   <!-- Condições de pagamento por fornecedor -->
@@ -742,9 +762,155 @@ table.tbl tbody tr:hover{background:#fafbfc}
   <div class="card" id="hist-lista"></div>
 </div>
 
+<!-- ABA CADASTRO -->
+<div id="tab-cadastro" class="section">
+  <div class="card">
+    <div class="card-title">👤 Cadastrar Colaboradora</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+      <div class="field">
+        <label>Nome <span class="req">*</span></label>
+        <input type="text" id="cad-nome" placeholder="Nome da colaboradora">
+      </div>
+      <div class="field">
+        <label>Tipo <span class="req">*</span></label>
+        <select id="cad-tipo">
+          <option value="">Selecione...</option>
+          <option value="rua">👥 Colaboradora da Rua</option>
+          <option value="interno">🏭 Interno</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Telefone</label>
+        <input type="text" id="cad-tel" placeholder="(11) 99999-9999">
+      </div>
+      <button class="btn-ms" onclick="salvarColaboradora()">➕ Cadastrar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Colaboradoras Cadastradas</div>
+    <div id="cad-lista"><div class="empty-state"><div class="ico">👤</div><p>Carregando...</p></div></div>
+  </div>
+
+  <!-- Acabamentos -->
+  <div class="card">
+    <div class="card-title">✂️ Tipos de Acabamento</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <label>Novo Acabamento</label>
+        <input type="text" id="cad-acab-novo" placeholder="Ex: Com velcro">
+      </div>
+      <button class="btn-ms" onclick="salvarOpcao('acabamento','cad-acab-novo')">➕ Adicionar</button>
+    </div>
+    <div id="cad-acab-lista"></div>
+  </div>
+
+  <!-- Tipos de Sacola -->
+  <div class="card">
+    <div class="card-title">🛍️ Tipos de Sacola</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <label>Novo Tipo</label>
+        <input type="text" id="cad-sacola-novo" placeholder="Ex: Caixa">
+      </div>
+      <button class="btn-ms" onclick="salvarOpcao('tipo_sacola','cad-sacola-novo')">➕ Adicionar</button>
+    </div>
+    <div id="cad-sacola-lista"></div>
+  </div>
+</div>
+
 </div><!-- end content -->
 
 <!-- MODALS -->
+<!-- MODAL EDITAR ENTRADA -->
+<div class="modal-overlay hidden" id="modal-edit-entrada">
+  <div class="modal">
+    <h2>✏️ Editar Entrada</h2>
+    <input type="hidden" id="edit-ent-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Qtde Total</label><input type="number" id="edit-ent-qtde" min="0"></div>
+      <div class="field"><label>Vlr/Mil (R$)</label><input type="number" id="edit-ent-vlr" step="0.01" min="0"></div>
+      <div class="field"><label>Prazo Entrega</label><input type="date" id="edit-ent-prazo"></div>
+      <div class="field"><label>Status</label>
+        <select id="edit-ent-status">
+          <option value="aberto">Aberto</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Condição Pagamento</label><input type="text" id="edit-ent-cond"></div>
+    <div class="field"><label>Observação</label><input type="text" id="edit-ent-obs"></div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-entrada')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoEntrada()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DISTRIBUIÇÃO -->
+<div class="modal-overlay hidden" id="modal-edit-dist">
+  <div class="modal">
+    <h2>✏️ Editar Distribuição</h2>
+    <input type="hidden" id="edit-dist-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Data Saída</label><input type="date" id="edit-dist-data"></div>
+      <div class="field"><label>Qtde Enviada</label><input type="number" id="edit-dist-qtde" min="0"></div>
+      <div class="field"><label>Vlr/Mil (R$)</label><input type="number" id="edit-dist-vlr" step="0.01" min="0"></div>
+      <div class="field"><label>Status</label>
+        <select id="edit-dist-status">
+          <option value="pendente">Pendente</option>
+          <option value="parcial">Parcial</option>
+          <option value="concluido">Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-dist')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoDist()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DEVOLUÇÃO -->
+<div class="modal-overlay hidden" id="modal-edit-dev">
+  <div class="modal">
+    <h2>✏️ Editar Devolução</h2>
+    <input type="hidden" id="edit-dev-id">
+    <div class="g4" style="gap:10px">
+      <div class="field"><label>Data Devolução</label><input type="date" id="edit-dev-data"></div>
+      <div class="field"><label>Qtde Devolvida</label><input type="number" id="edit-dev-dev" min="0"></div>
+      <div class="field"><label>Qtde Aprovada</label><input type="number" id="edit-dev-aprov" min="0"></div>
+      <div class="field"><label>Qtde Perda</label><input type="number" id="edit-dev-perda" min="0"></div>
+    </div>
+    <div class="g2" style="gap:10px">
+      <div class="field"><label>Motivo Perda</label><input type="text" id="edit-dev-motivo"></div>
+      <div class="field"><label>Valor a Pagar (R$)</label><input type="number" id="edit-dev-valor" step="0.01" min="0"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-dev')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoDev()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-edit-colab">
+  <div class="modal">
+    <h2>✏️ Editar Colaboradora</h2>
+    <input type="hidden" id="edit-colab-id">
+    <div class="field"><label>Nome <span style="color:#e53e3e">*</span></label><input type="text" id="edit-colab-nome"></div>
+    <div class="field"><label>Tipo <span style="color:#e53e3e">*</span></label>
+      <select id="edit-colab-tipo">
+        <option value="rua">👥 Colaboradora da Rua</option>
+        <option value="interno">🏭 Interno</option>
+      </select>
+    </div>
+    <div class="field"><label>Telefone</label><input type="text" id="edit-colab-tel" placeholder="(11) 99999-9999"></div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="fecharModal('modal-edit-colab')">Cancelar</button>
+      <button class="btn-ms" onclick="salvarEdicaoColaboradora()">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay hidden" id="modal-pix">
   <div class="modal">
     <h2>⚙ Configurar Chave PIX</h2><p>Aparecerá em todos os PDFs exportados.</p>
@@ -834,6 +1000,7 @@ window.onload=async()=>{
   document.getElementById('hist-mes').value=mes;
   await carregarConfig();
   await carregarColaboradores();
+  await carregarOpcoes();
   addItem();
   renderPainel();
   iniciarRealtime();
@@ -896,7 +1063,8 @@ async function renderPainel() {
     // Totais gerais
     const totalEntradas = entradas.length;
     const totalUnid     = entradas.reduce((s,e) => s+(e.qtde_total||0), 0);
-    const totalRua      = entradas.reduce((s,e) => s+((e.qtde_distribuida||0)-(e.qtde_feita||0)), 0);
+    // Na Rua = só distribuições pendente/parcial (exclui concluido mesmo com perdas)
+    const totalRua      = distribuicoes.reduce((s,d) => s+((d.qtde_enviada||0)-(d.qtde_retornada||0)), 0);
     const totalProntas  = entradas.reduce((s,e) => s+(e.qtde_feita||0), 0);
     const totalDisp     = entradas.reduce((s,e) => s+(e.qtde_disponivel||0), 0);
 
@@ -942,7 +1110,7 @@ async function renderPainel() {
           <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">
             <span>Total: <strong>${total.toLocaleString('pt-BR')}</strong></span>
             <span style="color:#276749">Prontas: <strong>${feito.toLocaleString('pt-BR')}</strong></span>
-            <span style="color:#2b6cb0">Na Rua: <strong>${((e.qtde_distribuida||0)-(feito)).toLocaleString('pt-BR')}</strong></span>
+            <span style="color:#2b6cb0">Na Rua: <strong>${distribuicoes.filter(d=>d.entrada_id===e.id).reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0).toLocaleString('pt-BR')}</strong></span>
             <span style="color:#92400e">A Fazer: <strong>${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</strong></span>
           </div>
           <div style="height:6px;background:#f0f0f0;border-radius:4px;overflow:hidden">
@@ -966,10 +1134,12 @@ async function renderPainel() {
         if (!porForn[e.fornecedor]) porForn[e.fornecedor] = { itens: [], totalUn: 0, totalRua: 0, totalProntas: 0, totalDisp: 0, totalVal: 0 };
         porForn[e.fornecedor].itens.push(e);
         porForn[e.fornecedor].totalUn      += e.qtde_total || 0;
-        porForn[e.fornecedor].totalRua     += Math.max(0,(e.qtde_distribuida||0)-(e.qtde_feita||0));
+        // Na Rua por fornecedor = distribuições pendente/parcial desta entrada
+        const distsForn = distribuicoes.filter(d => d.entrada_id === e.id);
+        porForn[e.fornecedor].totalRua     += distsForn.reduce((s,d)=>s+((d.qtde_enviada||0)-(d.qtde_retornada||0)),0);
         porForn[e.fornecedor].totalProntas += e.qtde_feita || 0;
         porForn[e.fornecedor].totalDisp    += e.qtde_disponivel || 0;
-        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro_receber||0);
+        porForn[e.fornecedor].totalVal     += ((e.qtde_feita||0)/1000) * (e.valor_milheiro||0);
       });
 
       let html = '';
@@ -1024,7 +1194,7 @@ async function renderPainel() {
     } else {
       const porColab = {};
       distribuicoes.forEach(d => {
-        const nome = d.colaborador_nome || '—';
+        const nome = d.colaboradores || '—';
         if (!porColab[nome]) porColab[nome] = { nome, tipo: d.tipo||'rua', enviado: 0, retornado: 0, aprovado: 0, perda: 0, pendente: 0, itens: [] };
         porColab[nome].enviado   += d.qtde_enviada   || 0;
         porColab[nome].retornado += d.qtde_retornada || 0;
@@ -1081,8 +1251,9 @@ function showTab(t,el){
   if(t==='entrada')renderEntradas();
   if(t==='distribuicao'){carregarEntradasSelect();renderDistribuicoes();}
   if(t==='conferencia'){carregarDistribuicoesSelect();renderConferencias();renderConfPainel();}
-  if(t==='financeiro')renderFinanceiro();
+  if(t==='financeiro'){renderFinanceiro();carregarSelectsFinanceiro();}
   if(t==='historico')renderHistorico();
+  if(t==='cadastro'){renderCadastro();renderOpcoes('acabamento','cad-acab-lista');renderOpcoes('tipo_sacola','cad-sacola-lista');}
 }
 
 // ===== MODALS =====
@@ -1360,7 +1531,7 @@ async function salvarEntrada() {
       fornecedor: forn, data_entrada: data, data_prazo: prazo,
       condicao_pagamento: cond, tipo_sacola: tipo, vias, acabamento: acab,
       modelo, qtde_total: qtde, qtde_disponivel: qtde,
-      valor_milheiro_receber: vlr, observacao: obs, status: 'aberto'
+      valor_milheiro: vlr, observacao: obs, status: 'aberto'
     });
 
     // Salva/atualiza condição de pagamento do fornecedor
@@ -1423,12 +1594,15 @@ async function renderEntradas() {
         <td class="r" style="color:${(e.qtde_disponivel||0)>0?'#276749':'#718096'}">${(e.qtde_disponivel||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#2b6cb0">${naRua.toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(e.qtde_feita||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(e.valor_milheiro_receber||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(e.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td style="white-space:nowrap">${prazoInfo.html}</td>
         <td style="font-size:11px;color:#718096">${e.condicao_pagamento||'—'}</td>
         <td>${statusBadge}</td>
         <td>
-          <button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>
+          <div style="display:flex;gap:4px">
+            <button onclick="editarEntrada(${e.id})" style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+            <button onclick="delEntrada(${e.id})" style="background:none;border:1px solid #fed7d7;border-radius:6px;color:#e53e3e;padding:3px 8px;cursor:pointer;font-size:11px">🗑</button>
+          </div>
         </td>
       </tr>`;
     });
@@ -1439,6 +1613,88 @@ async function renderEntradas() {
 }
 
 async function delEntrada(id){if(!confirm('Excluir esta entrada?'))return;await sbDelete('entradas',id);renderEntradas();alerta('Entrada excluída.','success')}
+
+async function editarEntrada(id){
+  const [e] = await sbGet('entradas',`?id=eq.${id}`);
+  if(!e) return;
+  document.getElementById('edit-ent-id').value    = id;
+  document.getElementById('edit-ent-qtde').value  = e.qtde_total||0;
+  document.getElementById('edit-ent-vlr').value   = e.valor_milheiro||0;
+  document.getElementById('edit-ent-prazo').value = e.data_prazo||'';
+  document.getElementById('edit-ent-status').value= e.status||'aberto';
+  document.getElementById('edit-ent-cond').value  = e.condicao_pagamento||'';
+  document.getElementById('edit-ent-obs').value   = e.observacao||'';
+  abrirModal('modal-edit-entrada');
+}
+
+async function salvarEdicaoEntrada(){
+  const id    = document.getElementById('edit-ent-id').value;
+  const qtde  = parseInt(document.getElementById('edit-ent-qtde').value)||0;
+  const vlr   = parseFloat(document.getElementById('edit-ent-vlr').value)||0;
+  const prazo = document.getElementById('edit-ent-prazo').value;
+  const status= document.getElementById('edit-ent-status').value;
+  const cond  = document.getElementById('edit-ent-cond').value.trim();
+  const obs   = document.getElementById('edit-ent-obs').value.trim();
+  try{
+    await sbPatch('entradas', id, {qtde_total:qtde, valor_milheiro:vlr, data_prazo:prazo, status, condicao_pagamento:cond, observacao:obs});
+    alerta('Entrada atualizada!','success');
+    fecharModal('modal-edit-entrada');
+    renderEntradas();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+function editarDistribuicao(id, qtde, data, vlr){
+  document.getElementById('edit-dist-id').value   = id;
+  document.getElementById('edit-dist-qtde').value = qtde;
+  document.getElementById('edit-dist-data').value = data;
+  document.getElementById('edit-dist-vlr').value  = vlr;
+  abrirModal('modal-edit-dist');
+  // Busca status atual
+  sbGet('distribuicoes',`?id=eq.${id}`).then(([d])=>{
+    if(d) document.getElementById('edit-dist-status').value = d.status||'pendente';
+  });
+}
+
+async function salvarEdicaoDist(){
+  const id    = document.getElementById('edit-dist-id').value;
+  const qtde  = parseInt(document.getElementById('edit-dist-qtde').value)||0;
+  const data  = document.getElementById('edit-dist-data').value;
+  const vlr   = parseFloat(document.getElementById('edit-dist-vlr').value)||0;
+  const status= document.getElementById('edit-dist-status').value;
+  try{
+    await sbPatch('distribuicoes', id, {qtde_enviada:qtde, data_saida:data, valor_milheiro:vlr, status});
+    alerta('Distribuição atualizada!','success');
+    fecharModal('modal-edit-dist');
+    renderDistribuicoes();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+function editarDevolucao(id, dev, aprov, perda, motivo, valor, data){
+  document.getElementById('edit-dev-id').value     = id;
+  document.getElementById('edit-dev-dev').value    = dev;
+  document.getElementById('edit-dev-aprov').value  = aprov;
+  document.getElementById('edit-dev-perda').value  = perda;
+  document.getElementById('edit-dev-motivo').value = motivo;
+  document.getElementById('edit-dev-valor').value  = valor;
+  document.getElementById('edit-dev-data').value   = data;
+  abrirModal('modal-edit-dev');
+}
+
+async function salvarEdicaoDev(){
+  const id    = document.getElementById('edit-dev-id').value;
+  const dev   = parseInt(document.getElementById('edit-dev-dev').value)||0;
+  const aprov = parseInt(document.getElementById('edit-dev-aprov').value)||0;
+  const perda = parseInt(document.getElementById('edit-dev-perda').value)||0;
+  const motivo= document.getElementById('edit-dev-motivo').value.trim();
+  const valor = parseFloat(document.getElementById('edit-dev-valor').value)||0;
+  const data  = document.getElementById('edit-dev-data').value;
+  try{
+    await sbPatch('devolucoes', id, {qtde_devolvida:dev, qtde_aprovada:aprov, qtde_perda:perda, motivo_perda:motivo||null, valor_a_pagar:valor, data_devolucao:data});
+    alerta('Devolução atualizada!','success');
+    fecharModal('modal-edit-dev');
+    renderConferencias();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
 
 // ===== DISTRIBUIÇÃO =====
 let distEntradaAtual = null;
@@ -1641,21 +1897,22 @@ async function salvarDistribuicao() {
   try {
     // Salva distribuição
     await sbPost('distribuicoes', {
-      entrada_id: parseInt(entId), tipo, colaborador_id: colaboradorId,
-      colaborador_nome: colaboradorNome,
+      entrada_id: parseInt(entId), tipo,
+      colaboradores: colaboradorNome,
       colaboradores_internos: tipo === 'interno' ? JSON.stringify(colaboradoresInternos) : null,
       data_saida: data, qtde_enviada: qtde, servico,
-      valor_milheiro_pagar: vlr, status: 'pendente',
+      valor_milheiro: vlr, status: 'pendente',
       data_pagamento: document.getElementById('dist-data-pgto').value || null
     });
 
-    // Baixa saldo da entrada
-    const novoSaldo = (distEntradaAtual?.qtde_disponivel || 0) - qtde;
-    const novaDistrib = (distEntradaAtual?.qtde_distribuida || 0) + qtde;
+    // Baixa saldo da entrada — busca saldo atual do banco para evitar sobrescrita errada
+    const [entradaAtual] = await sbGet('entradas', `?id=eq.${entId}`);
+    const novoSaldo = (entradaAtual?.qtde_disponivel || 0) - qtde;
+    const novaDistrib = (entradaAtual?.qtde_distribuida || 0) + qtde;
     await sbPatch('entradas', entId, {
       qtde_disponivel: novoSaldo,
       qtde_distribuida: novaDistrib,
-      status: novoSaldo <= 0 ? 'em_andamento' : 'em_andamento'
+      status: 'em_andamento'
     });
 
     alerta('Distribuição registrada! Saldo atualizado.', 'success');
@@ -1664,6 +1921,7 @@ async function salvarDistribuicao() {
     document.getElementById('dist-entrada').value = '';
     document.getElementById('dist-tipo').value = '';
     document.getElementById('dist-qtde').value = '';
+    document.getElementById('dist-colaborador').value = '';
     document.getElementById('dist-data').value = new Date().toISOString().split('T')[0];
     document.getElementById('dist-data-pgto').value = '';
     document.getElementById('dist-pgto-padrao').textContent = '';
@@ -1676,6 +1934,7 @@ async function salvarDistribuicao() {
     document.getElementById('dist-saldo-info').textContent = '';
     distEntradaAtual = null; distInternosCount = 0;
 
+    carregarEntradasSelect();
     renderDistribuicoes();
   } catch(e) { alerta('Erro: ' + e.message, 'error'); }
 }
@@ -1703,7 +1962,7 @@ async function renderDistribuicoes() {
 
     lista.forEach(d => {
       const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '—';
-      const total = ((d.valor_milheiro_pagar||0)/1000) * (d.qtde_aprovada||d.qtde_enviada||0);
+      const total = ((d.valor_milheiro||0)/1000) * (d.qtde_aprovada||d.qtde_enviada||0);
       const tipoBadge = d.tipo === 'interno'
         ? '<span class="badge bg-purple">🏭 Interno</span>'
         : '<span class="badge bg-blue">👥 Rua</span>';
@@ -1714,15 +1973,19 @@ async function renderDistribuicoes() {
       html += `<tr>
         <td>${dt}</td>
         <td>${tipoBadge}</td>
-        <td style="font-size:11px">${d.colaborador_nome}</td>
+        <td style="font-size:11px">${d.colaboradores}</td>
         <td style="font-size:11px">${d.servico}</td>
         <td class="r"><strong>${(d.qtde_enviada||0).toLocaleString('pt-BR')}</strong></td>
         <td class="r" style="color:#2b6cb0">${(d.qtde_retornada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
-        <td class="r">R$ ${(d.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</td>
+        <td class="r">R$ ${(d.valor_milheiro||0).toFixed(2).replace('.',',')}</td>
         <td class="r" style="font-weight:700;color:#276749">R$ ${total.toFixed(2).replace('.',',')}</td>
         <td>${statusBadge}</td>
+        <td>
+          <button onclick="editarDistribuicao(${d.id},${d.qtde_enviada||0},'${d.data_saida||''}',${d.valor_milheiro||0})" 
+            style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+        </td>
       </tr>`;
     });
     html += '</tbody></table></div>';
@@ -1743,7 +2006,7 @@ async function carregarDistribuicoesSelect() {
       o.value = d.id;
       const dt = d.data_saida ? d.data_saida.split('-').reverse().join('/') : '';
       const pendente = (d.qtde_enviada||0) - (d.qtde_retornada||0);
-      o.textContent = `${dt} — ${d.colaborador_nome} — ${d.servico} | Enviado: ${(d.qtde_enviada||0).toLocaleString('pt-BR')} | Pendente: ${pendente.toLocaleString('pt-BR')}`;
+      o.textContent = `${dt} — ${d.colaboradores} — ${d.servico} | Enviado: ${(d.qtde_enviada||0).toLocaleString('pt-BR')} | Pendente: ${pendente.toLocaleString('pt-BR')}`;
       o.dataset.distObj = JSON.stringify(d);
       sel.appendChild(o);
     });
@@ -1778,13 +2041,13 @@ function onConfDistChange() {
   const tipo = confDistAtual.tipo === 'interno' ? '🏭 Interno' : '👥 Rua';
   infoEl.innerHTML = `
     <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <div><span style="color:#4a5568">Colaborador:</span> <strong>${confDistAtual.colaborador_nome}</strong></div>
+      <div><span style="color:#4a5568">Colaborador:</span> <strong>${confDistAtual.colaboradores}</strong></div>
       <div><span style="color:#4a5568">Tipo:</span> <strong>${tipo}</strong></div>
       <div><span style="color:#4a5568">Serviço:</span> <strong>${confDistAtual.servico}</strong></div>
       <div><span style="color:#4a5568">Enviado:</span> <strong>${enviado.toLocaleString('pt-BR')}</strong></div>
       <div><span style="color:#4a5568">Já retornou:</span> <strong style="color:#276749">${retorn.toLocaleString('pt-BR')}</strong></div>
       <div><span style="color:#4a5568">Pendente:</span> <strong style="color:#e53e3e">${pendente.toLocaleString('pt-BR')}</strong></div>
-      <div><span style="color:#4a5568">Vlr/Mil:</span> <strong>R$ ${(confDistAtual.valor_milheiro_pagar||0).toFixed(2).replace('.',',')}</strong></div>
+      <div><span style="color:#4a5568">Vlr/Mil:</span> <strong>R$ ${(confDistAtual.valor_milheiro||0).toFixed(2).replace('.',',')}</strong></div>
     </div>`;
   calcConf();
 }
@@ -1793,7 +2056,7 @@ function calcConf() {
   const dev   = parseInt(document.getElementById('conf-qtde-dev').value) || 0;
   const aprov = parseInt(document.getElementById('conf-qtde-aprov').value) || 0;
   const perda = parseInt(document.getElementById('conf-qtde-perda').value) || 0;
-  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+  const vlr   = confDistAtual?.valor_milheiro || 0;
 
   // Auto-calcula perda se aprov foi preenchido
   if (dev > 0 && aprov >= 0) {
@@ -1807,12 +2070,17 @@ function calcConf() {
   const valor = (vlr / 1000) * aprovFinal;
   document.getElementById('conf-valor').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
 
-  // Alerta se devolvido > enviado
+  // Info de divergência
   if (confDistAtual) {
     const pendente = (confDistAtual.qtde_enviada||0) - (confDistAtual.qtde_retornada||0);
     const info = document.getElementById('conf-saldo-info');
     if (dev > pendente) {
-      info.textContent = `⚠ Qtde excede o pendente! (${pendente.toLocaleString('pt-BR')} un pendentes)`;
+      const extra = dev - pendente;
+      info.textContent = `⚠ Veio ${extra} a mais que o enviado — divergência positiva`;
+      info.style.color = '#d69e2e';
+    } else if (dev < pendente && dev > 0) {
+      const falta = pendente - dev;
+      info.textContent = `⚠ Faltam ${falta.toLocaleString('pt-BR')} un — marque como entrega parcial se não fechou`;
       info.style.color = '#e53e3e';
     } else {
       info.textContent = `Pendente de retorno: ${pendente.toLocaleString('pt-BR')} un`;
@@ -1836,7 +2104,7 @@ async function salvarDevolucao() {
   if (aprov < 0) { alerta('Qtde aprovada inválida!', 'error'); return; }
   if (aprov + perda !== dev) { alerta(`Atenção: Aprovadas (${aprov}) + Perdas (${perda}) ≠ Devolvidas (${dev})!`, 'error'); return; }
 
-  const vlr   = confDistAtual?.valor_milheiro_pagar || 0;
+  const vlr   = confDistAtual?.valor_milheiro || 0;
   const valor = (vlr / 1000) * aprov;
 
   try {
@@ -1847,7 +2115,7 @@ async function salvarDevolucao() {
       data_devolucao: data,
       qtde_devolvida: dev, qtde_aprovada: aprov, qtde_perda: perda,
       motivo_perda: motivo, conferido: true,
-      data_conferencia: data, valor_a_pagar: valor
+      valor_a_pagar: valor
     });
 
     // Atualiza distribuição
@@ -1888,6 +2156,7 @@ async function salvarDevolucao() {
     document.getElementById('conf-saldo-info').textContent = '';
     confDistAtual = null;
 
+    carregarDistribuicoesSelect();
     renderConferencias();
     renderConfPainel();
   } catch(e) { alerta('Erro: ' + e.message, 'error'); }
@@ -1899,10 +2168,21 @@ async function renderConfPainel() {
     const aConf   = await sbGet('devolucoes', '?conferido=eq.false');
     const entradas = await sbGet('entradas', '?status=neq.concluido');
     const totalProntas = entradas.reduce((s, e) => s + (e.qtde_feita || 0), 0);
+    // Total de unidades ainda na rua (enviado - retornado)
+    const unNaRua = pend.reduce((s, d) => s + ((d.qtde_enviada||0) - (d.qtde_retornada||0)), 0);
+    // Total de unidades aguardando conferência (devolvidas mas não conferidas)
+    const unAConf = aConf.reduce((s, d) => s + (d.qtde_devolvida||0), 0);
 
-    document.getElementById('conf-res-pend').textContent     = pend.length;
-    document.getElementById('conf-res-conferir').textContent = aConf.length;
+    // Colaboradoras que ainda não devolveram nada (qtde_retornada = 0 ou null)
+    const faltamDevolver = pend.filter(d => (d.qtde_retornada||0) < (d.qtde_enviada||0)).length;
+
+    document.getElementById('conf-res-pend').textContent     = unNaRua.toLocaleString('pt-BR');
+    document.getElementById('conf-res-conferir').textContent = faltamDevolver;
     document.getElementById('conf-res-prontas').textContent  = totalProntas.toLocaleString('pt-BR');
+
+    // Atualiza subtítulos
+    document.querySelector('#conf-res-pend').closest('.p-box').querySelector('.sub').textContent = 'unidades na rua';
+    document.querySelector('#conf-res-conferir').closest('.p-box').querySelector('.sub').textContent = 'colaboradoras p/ devolver';
   } catch(e) {}
 }
 
@@ -1927,7 +2207,7 @@ async function renderConferencias() {
         const dt = d.data_devolucao ? d.data_devolucao.split('-').reverse().join('/') : '—';
         html += `<tr>
           <td>${dt}</td>
-          <td>${distObj.colaborador_nome || '—'}</td>
+          <td>${distObj.colaboradores || '—'}</td>
           <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
           <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
@@ -1952,7 +2232,7 @@ async function renderConferencias() {
     let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
       <th>Data Dev.</th><th>Colaborador</th><th class="r">Devolvido</th>
       <th class="r">Aprovado</th><th class="r">Perda</th><th>Motivo</th>
-      <th class="r">Vlr Pagar</th><th>Status</th>
+      <th class="r">Vlr Pagar</th><th>Status</th><th></th>
     </tr></thead><tbody>`;
 
     for (const d of lista) {
@@ -1964,13 +2244,17 @@ async function renderConferencias() {
         : '<span class="badge bg-yellow">⏳ Pendente</span>';
       html += `<tr>
         <td>${dt}</td>
-        <td style="font-size:11px">${distObj.colaborador_nome || '—'}</td>
+        <td style="font-size:11px">${distObj.colaboradores || '—'}</td>
         <td class="r">${(d.qtde_devolvida||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#276749;font-weight:700">${(d.qtde_aprovada||0).toLocaleString('pt-BR')}</td>
         <td class="r" style="color:#e53e3e">${(d.qtde_perda||0).toLocaleString('pt-BR')}</td>
         <td style="font-size:11px">${d.motivo_perda || '—'}</td>
         <td class="r" style="font-weight:700;color:#276749">R$ ${(d.valor_a_pagar||0).toFixed(2).replace('.',',')}</td>
         <td>${statusBadge}</td>
+        <td>
+          <button onclick="editarDevolucao(${d.id},${d.qtde_devolvida||0},${d.qtde_aprovada||0},${d.qtde_perda||0},'${d.motivo_perda||''}',${d.valor_a_pagar||0},'${d.data_devolucao||''}')"
+            style="background:none;border:1px solid #bee3f8;border-radius:6px;color:#2b6cb0;padding:3px 8px;cursor:pointer;font-size:11px">✏️</button>
+        </td>
       </tr>`;
     }
     html += '</tbody></table></div>';
@@ -2142,68 +2426,107 @@ async function renderFinanceiro() {
     if (mes) { const [a,m] = mes.split('-'); const ul = new Date(+a,+m,0).getDate(); pd += `&data_devolucao=gte.${mes}-01&data_devolucao=lte.${mes}-${ul}`; }
 
     const devs = await sbGet('devolucoes', pd);
-    const totalPag = devs.reduce((s,d) => s+(d.valor_a_pagar||0), 0);
+    const devsPendentes = devs.filter(d => d.status_pagamento !== 'pago');
+    const totalPag = devsPendentes.reduce((s,d) => s+(d.valor_a_pagar||0), 0);
+    const totalPago = devs.filter(d=>d.status_pagamento==='pago').reduce((s,d)=>s+(d.valor_a_pagar||0),0);
 
     document.getElementById('fin-pag-pend').textContent    = 'R$ ' + totalPag.toFixed(2).replace('.',',');
-    document.getElementById('fin-pag-pend-n').textContent  = devs.length + ' devoluções';
-    document.getElementById('fin-pag-ok').textContent      = 'R$ 0,00';
-    document.getElementById('fin-pag-ok-n').textContent    = '—';
-    document.getElementById('fin-pag-tot').textContent     = 'R$ ' + totalPag.toFixed(2).replace('.',',');
+    document.getElementById('fin-pag-pend-n').textContent  = devsPendentes.length + ' devoluções';
+    document.getElementById('fin-pag-ok').textContent      = 'R$ ' + totalPago.toFixed(2).replace('.',',');
+    document.getElementById('fin-pag-ok-n').textContent    = devs.filter(d=>d.status_pagamento==='pago').length + ' pagas';
+    document.getElementById('fin-pag-tot').textContent     = 'R$ ' + (totalPag+totalPago).toFixed(2).replace('.',',');
 
-    if (!devs.length) {
-      document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento no período.</p></div>';
+    renderPagosEfetuados(devs);
+
+    if (!devsPendentes.length) {
+      document.getElementById('fin-pag-card').innerHTML = '<div class="empty-state"><div class="ico">💸</div><p>Nenhum pagamento pendente no período.</p></div>';
     } else {
-      // Agrupa por colaborador
+      // Agrupa por colaborador → fornecedor/modelo (só pendentes)
       const porColab = {};
-      for (const d of devs) {
+      for (const d of devsPendentes) {
         const dist = await sbGet('distribuicoes', `?id=eq.${d.distribuicao_id}`);
         const distObj = dist[0] || {};
-        const nome = distObj.colaborador_nome || 'Desconhecido';
         const tipo = distObj.tipo || 'rua';
 
-        // Se for interno com múltiplos, divide igualmente
-        let pessoas = [{ nome, tipo }];
+        // Busca entrada para pegar fornecedor e modelo
+        let fornecedor = '—', modelo = '—';
+        if (distObj.entrada_id) {
+          const [ent] = await sbGet('entradas', `?id=eq.${distObj.entrada_id}`);
+          if (ent) { fornecedor = ent.fornecedor || '—'; modelo = ent.modelo || ent.tipo_sacola || '—'; }
+        }
+
+        // Se interno com múltiplos, divide igualmente
+        let pessoas = [{ nome: distObj.colaboradores || 'Desconhecido', tipo }];
         if (tipo === 'interno' && distObj.colaboradores_internos) {
           try {
             const internos = JSON.parse(distObj.colaboradores_internos);
-            if (internos.length > 1) {
-              pessoas = internos.map(i => ({ nome: i.nome, tipo: 'interno' }));
-            }
+            if (internos.length > 1) pessoas = internos.map(i => ({ nome: i.nome, tipo: 'interno' }));
           } catch(e) {}
         }
 
         const valorPorPessoa = (d.valor_a_pagar || 0) / pessoas.length;
+        const qtdePorPessoa  = Math.round((d.qtde_aprovada || 0) / pessoas.length);
+        const perdaPorPessoa = Math.round((d.qtde_perda    || 0) / pessoas.length);
+
         pessoas.forEach(p => {
-          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0 };
+          if (!porColab[p.nome]) porColab[p.nome] = { nome: p.nome, tipo: p.tipo, total: 0, qtde: 0, perda: 0, itens: [], devIds: [] };
           porColab[p.nome].total += valorPorPessoa;
-          porColab[p.nome].qtde  += Math.round((d.qtde_aprovada || 0) / pessoas.length);
-          porColab[p.nome].perda += Math.round((d.qtde_perda    || 0) / pessoas.length);
+          porColab[p.nome].qtde  += qtdePorPessoa;
+          porColab[p.nome].perda += perdaPorPessoa;
+          porColab[p.nome].devIds.push(d.id);
+          // Agrupa por fornecedor+modelo dentro do colaborador
+          const chave = `${fornecedor}||${modelo}||${distObj.valor_milheiro||0}`;
+          const item = porColab[p.nome].itens.find(i => i.chave === chave);
+          if (item) {
+            item.qtde  += qtdePorPessoa;
+            item.perda += perdaPorPessoa;
+            item.total += valorPorPessoa;
+          } else {
+            porColab[p.nome].itens.push({ chave, fornecedor, modelo, vlr: distObj.valor_milheiro||0, qtde: qtdePorPessoa, perda: perdaPorPessoa, total: valorPorPessoa });
+          }
         });
       }
 
       const lista = Object.values(porColab).sort((a,b) => b.total - a.total);
       let html = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
-        <th>Colaborador</th><th>Tipo</th>
-        <th class="r">Qtde Produzida</th><th class="r">Perdas</th>
-        <th class="r">Total a Pagar</th>
+        <th>Colaborador</th><th>Tipo</th><th>Fornecedor / Modelo</th>
+        <th class="r">Qtde</th><th class="r">Perdas</th><th class="r">Vlr/Mil</th>
+        <th class="r">Total a Pagar</th><th></th>
       </tr></thead><tbody>`;
 
       lista.forEach(c => {
         const tipoBadge = c.tipo === 'interno'
           ? '<span class="badge bg-purple">🏭 Interno</span>'
           : '<span class="badge bg-blue">👥 Rua</span>';
-        html += `<tr>
-          <td><strong>${c.nome}</strong></td>
-          <td>${tipoBadge}</td>
-          <td class="r" style="font-weight:600">${c.qtde.toLocaleString('pt-BR')}</td>
-          <td class="r" style="color:#e53e3e">${c.perda.toLocaleString('pt-BR')}</td>
-          <td class="r" style="font-weight:800;color:#276749;font-size:14px">R$ ${c.total.toFixed(2).replace('.',',')}</td>
-        </tr>`;
+        // Primeira linha com nome e tipo
+        c.itens.forEach((item, idx) => {
+          html += `<tr ${idx === 0 ? '' : 'style="border-top:none"'}>
+            ${idx === 0 ? `<td rowspan="${c.itens.length}" style="vertical-align:top;font-weight:700">${c.nome}</td>
+            <td rowspan="${c.itens.length}" style="vertical-align:top">${tipoBadge}</td>` : ''}
+            <td style="font-size:12px;color:#4a5568">${item.fornecedor} — ${item.modelo}</td>
+            <td class="r">${item.qtde.toLocaleString('pt-BR')}</td>
+            <td class="r" style="color:${item.perda>0?'#e53e3e':'#718096'}">${item.perda.toLocaleString('pt-BR')}</td>
+            <td class="r" style="color:#718096;font-size:12px">R$ ${item.vlr.toFixed(2).replace('.',',')}</td>
+            <td class="r" style="font-weight:700;color:#276749">R$ ${item.total.toFixed(2).replace('.',',')}</td>
+            ${idx === 0 ? `<td rowspan="${c.itens.length}" style="vertical-align:middle;text-align:center">
+              <button class="btn-ms" style="font-size:11px;padding:5px 10px;white-space:nowrap" 
+                onclick="registrarPagamento('${c.nome}',${c.total.toFixed(2)},${JSON.stringify(c.devIds||[])})">
+                💰 Pagar<br><small>R$ ${c.total.toFixed(2).replace('.',',')}</small>
+              </button>
+            </td>` : ''}
+          </tr>`;
+        });
+        // Subtotal do colaborador se tiver mais de 1 item
+        if (c.itens.length > 1) {
+          html += `<tr style="background:#f7fafc;border-top:1px solid #e2e8f0">
+            <td colspan="4" style="text-align:right;font-size:12px;color:#718096">Subtotal ${c.nome}</td>
+            <td class="r" style="font-weight:800;color:#276749">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+          </tr>`;
+        }
       });
 
-      // Linha total
       html += `<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
-        <td colspan="4" style="font-weight:700;text-align:right;color:#276749">TOTAL A PAGAR</td>
+        <td colspan="6" style="font-weight:700;text-align:right;color:#276749">TOTAL A PAGAR</td>
         <td class="r" style="font-weight:900;color:#276749;font-size:15px">R$ ${totalPag.toFixed(2).replace('.',',')}</td>
       </tr>`;
       html += '</tbody></table></div>';
@@ -2341,6 +2664,290 @@ function alerta(msg,tipo){
   b.className='alert alert-'+tipo;b.innerHTML=`${icons[tipo]||''} ${msg}`;b.style.display='flex';
   setTimeout(()=>b.style.display='none',4000);
 }
+
+// ===== CADASTRO =====
+async function salvarColaboradora(){
+  const nome = document.getElementById('cad-nome').value.trim();
+  const tipo = document.getElementById('cad-tipo').value;
+  const tel  = document.getElementById('cad-tel').value.trim();
+  if(!nome){ alerta('Informe o nome!','error'); return; }
+  if(!tipo){ alerta('Selecione o tipo!','error'); return; }
+  try{
+    await sbPost('colaboradores',{nome, tipo, telefone: tel||null, ativo: true});
+    alerta('Colaboradora cadastrada!','success');
+    document.getElementById('cad-nome').value='';
+    document.getElementById('cad-tipo').value='';
+    document.getElementById('cad-tel').value='';
+    await carregarColaboradores();
+    renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderCadastro(){
+  const el = document.getElementById('cad-lista');
+  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+  try{
+    const lista = await sbGet('colaboradores','?order=tipo.asc,nome.asc');
+    if(!lista.length){ el.innerHTML='<div class="empty-state"><div class="ico">👤</div><p>Nenhuma colaboradora cadastrada.</p></div>'; return; }
+    let html=`<table class="tbl"><thead><tr><th>Nome</th><th>Tipo</th><th>Telefone</th><th>Status</th><th></th></tr></thead><tbody>`;
+    lista.forEach(c=>{
+      const badge = c.tipo==='interno'
+        ? '<span class="badge bg-purple">🏭 Interno</span>'
+        : '<span class="badge bg-blue">👥 Rua</span>';
+      const status = c.ativo
+        ? '<span class="badge bg-green">✅ Ativo</span>'
+        : '<span class="badge bg-yellow">⏸ Inativo</span>';
+      html+=`<tr>
+        <td><strong>${c.nome}</strong></td>
+        <td>${badge}</td>
+        <td>${c.telefone||'—'}</td>
+        <td>${status}</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-mc" style="font-size:11px;padding:4px 8px" onclick="editarColaboradora(${c.id},'${c.nome}','${c.tipo}','${c.telefone||''}')">✏️ Editar</button>
+          <button class="btn-mc" style="font-size:11px;padding:4px 8px" onclick="toggleColaboradora(${c.id},${c.ativo})">${c.ativo?'Desativar':'Ativar'}</button>
+        </td>
+      </tr>`;
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=`<div class="empty-state"><div class="ico">❌</div><p>${e.message}</p></div>`; }
+}
+
+async function toggleColaboradora(id, ativo){
+  try{
+    await sbPatch('colaboradores', id, {ativo: !ativo});
+    await carregarColaboradores();
+    renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+function editarColaboradora(id, nome, tipo, tel){
+  document.getElementById('edit-colab-id').value = id;
+  document.getElementById('edit-colab-nome').value = nome;
+  document.getElementById('edit-colab-tipo').value = tipo;
+  document.getElementById('edit-colab-tel').value = tel;
+  document.getElementById('modal-edit-colab').classList.remove('hidden');
+}
+
+async function salvarEdicaoColaboradora(){
+  const id   = document.getElementById('edit-colab-id').value;
+  const nome = document.getElementById('edit-colab-nome').value.trim();
+  const tipo = document.getElementById('edit-colab-tipo').value;
+  const tel  = document.getElementById('edit-colab-tel').value.trim();
+  if(!nome){ alerta('Informe o nome!','error'); return; }
+  if(!tipo){ alerta('Selecione o tipo!','error'); return; }
+  try{
+    await sbPatch('colaboradores', id, {nome, tipo, telefone: tel||null});
+    alerta('Colaboradora atualizada!','success');
+    fecharModal('modal-edit-colab');
+    await carregarColaboradores();
+    renderCadastro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+// ===== OPÇÕES (acabamento, tipo_sacola) =====
+let opcoesCache = {};
+
+async function carregarOpcoes(){
+  try{
+    const lista = await sbGet('opcoes','?ativo=eq.true&order=tipo.asc,valor.asc');
+    opcoesCache = {};
+    lista.forEach(o => {
+      if(!opcoesCache[o.tipo]) opcoesCache[o.tipo] = [];
+      opcoesCache[o.tipo].push(o);
+    });
+    // Popula selects de entrada
+    popularSelect('ent-tipo', opcoesCache['tipo_sacola']||[], '');
+    popularSelect('ent-acabamento', opcoesCache['acabamento']||[], '—');
+  }catch(e){ console.error('Erro ao carregar opções:',e); }
+}
+
+function popularSelect(id, lista, placeholder){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const val = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  lista.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.valor; opt.textContent = o.valor;
+    sel.appendChild(opt);
+  });
+  if(val) sel.value = val;
+}
+
+async function salvarOpcao(tipo, inputId){
+  const inp = document.getElementById(inputId);
+  const valor = inp.value.trim();
+  if(!valor){ alerta('Informe o valor!','error'); return; }
+  try{
+    await sbPost('opcoes',{tipo, valor, ativo: true});
+    alerta('Adicionado!','success');
+    inp.value = '';
+    await carregarOpcoes();
+    renderOpcoes(tipo, tipo==='acabamento'?'cad-acab-lista':'cad-sacola-lista');
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderOpcoes(tipo, elId){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  try{
+    const lista = await sbGet('opcoes',`?tipo=eq.${tipo}&order=valor.asc`);
+    if(!lista.length){ el.innerHTML='<p style="color:#718096;font-size:12px">Nenhuma opção cadastrada.</p>'; return; }
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    lista.forEach(o => {
+      const bg = o.ativo ? '#f0fff4' : '#fff5f5';
+      const cor = o.ativo ? '#276749' : '#c53030';
+      html += `<div style="background:${bg};border:1px solid ${cor}30;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:13px">
+        <span id="opcao-txt-${o.id}" style="color:${cor}">${o.valor}</span>
+        <button onclick="editarOpcao(${o.id},'${o.valor}')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0" title="Editar">✏️</button>
+        <button onclick="toggleOpcao(${o.id},${o.ativo},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0" title="${o.ativo?'Desativar':'Ativar'}">${o.ativo?'🔴':'🟢'}</button>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
+}
+
+function editarOpcao(id, valorAtual){
+  const novo = prompt('Editar opção:', valorAtual);
+  if(!novo || novo.trim() === valorAtual) return;
+  sbPatch('opcoes', id, {valor: novo.trim()}).then(async ()=>{
+    alerta('Atualizado!','success');
+    await carregarOpcoes();
+    renderOpcoes('acabamento','cad-acab-lista');
+    renderOpcoes('tipo_sacola','cad-sacola-lista');
+  }).catch(e => alerta('Erro: '+e.message,'error'));
+}
+
+async function toggleOpcao(id, ativo, tipo){
+  try{
+    await sbPatch('opcoes', id, {ativo: !ativo});
+    await carregarOpcoes();
+    renderOpcoes(tipo, tipo==='acabamento'?'cad-acab-lista':'cad-sacola-lista');
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+// ===== PAGAMENTOS =====
+async function registrarPagamento(nome, total, devIds){
+  if(!confirm(`Confirma pagamento de R$ ${total.toFixed(2).replace('.',',')} para ${nome}?`)) return;
+  try{
+    for(const id of devIds){
+      await sbPatch('devolucoes', id, {status_pagamento: 'pago', data_pagamento: new Date().toISOString().split('T')[0]});
+    }
+    alerta(`✅ Pagamento de R$ ${total.toFixed(2).replace('.',',')} registrado para ${nome}!`, 'success');
+    renderFinanceiro();
+  }catch(e){ alerta('Erro: '+e.message,'error'); }
+}
+
+async function renderPagosEfetuados(devs){
+  const el = document.getElementById('fin-pagos-card');
+  const pagos = devs ? devs.filter(d => d.status_pagamento === 'pago') : [];
+  if(!pagos.length){ el.innerHTML='<div class="empty-state"><div class="ico">✅</div><p>Nenhum pagamento efetuado no período.</p></div>'; return; }
+
+  // Agrupa por colaborador
+  const porColab = {};
+  for(const d of pagos){
+    const [dist] = await sbGet('distribuicoes',`?id=eq.${d.distribuicao_id}`);
+    const nome = dist?.colaboradores || '?';
+    if(!porColab[nome]) porColab[nome] = {nome, total:0, qtde:0, data:''};
+    porColab[nome].total += d.valor_a_pagar||0;
+    porColab[nome].qtde  += d.qtde_aprovada||0;
+    porColab[nome].data   = d.data_pagamento||'';
+  }
+
+  let html=`<div class="tbl-wrap"><table class="tbl"><thead><tr>
+    <th>Colaborador</th><th>Qtde Produzida</th><th class="r">Total Pago</th><th>Data Pagamento</th>
+  </tr></thead><tbody>`;
+  Object.values(porColab).forEach(c=>{
+    const dt = c.data ? c.data.split('-').reverse().join('/') : '—';
+    html+=`<tr>
+      <td><strong>${c.nome}</strong></td>
+      <td>${c.qtde.toLocaleString('pt-BR')}</td>
+      <td class="r" style="color:#276749;font-weight:700">R$ ${c.total.toFixed(2).replace('.',',')}</td>
+      <td>${dt}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+async function carregarSelectsFinanceiro(){
+  const colabs = await sbGet('colaboradores','?ativo=eq.true&order=nome.asc');
+  const selC = document.getElementById('fin-busca-colab');
+  selC.innerHTML='<option value="">Selecione...</option>';
+  colabs.forEach(c=>{ const o=document.createElement('option'); o.value=c.nome; o.textContent=c.nome; selC.appendChild(o); });
+}
+
+async function pesquisarColaborador(){
+  const nome = document.getElementById('fin-busca-colab').value;
+  const de   = document.getElementById('fin-busca-colab-de').value;
+  const ate  = document.getElementById('fin-busca-colab-ate').value;
+  const el   = document.getElementById('fin-busca-colab-result');
+  if(!nome){ alerta('Selecione um colaborador!','error'); return; }
+  el.innerHTML='<div class="empty-state"><div class="ico">⏳</div><p>Carregando...</p></div>';
+
+  try{
+    const dists = await sbGet('distribuicoes',`?colaboradores=eq.${encodeURIComponent(nome)}&order=data_saida.desc`);
+    if(!dists.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum registro encontrado.</p></div>'; return; }
+
+    const rows = [];
+    for(const d of dists){
+      const mes = d.data_saida?.slice(0,7)||'';
+      if(de && mes < de) continue;
+      if(ate && mes > ate) continue;
+      // Só devoluções conferidas
+      const devs = await sbGet('devolucoes',`?distribuicao_id=eq.${d.id}&conferido=eq.true`);
+      if(!devs.length) continue;
+      const [ent] = await sbGet('entradas',`?id=eq.${d.entrada_id}`);
+      const aprovado = devs.reduce((s,x)=>s+(x.qtde_aprovada||0),0);
+      const perda    = devs.reduce((s,x)=>s+(x.qtde_perda||0),0);
+      const valor    = devs.reduce((s,x)=>s+(x.valor_a_pagar||0),0);
+      const pago     = devs.every(x=>x.status_pagamento==='pago');
+      rows.push({
+        mes, fornecedor: ent?.fornecedor||'—', modelo: ent?.modelo||ent?.tipo_sacola||'—',
+        enviado: d.qtde_enviada||0, aprovado, perda, valor, pago
+      });
+    }
+
+    if(!rows.length){ el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>Nenhum serviço conferido no período.</p></div>'; return; }
+
+    let totalGeral=0, totalPago=0, totalPend=0;
+    rows.forEach(r=>{ totalGeral+=r.valor; if(r.pago) totalPago+=r.valor; else totalPend+=r.valor; });
+
+    let html=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div class="p-box"><label>Total Produzido</label><div class="val">R$ ${totalGeral.toFixed(2).replace('.',',')}</div></div>
+      <div class="p-box"><label>✅ Pago</label><div class="val" style="color:#276749">R$ ${totalPago.toFixed(2).replace('.',',')}</div></div>
+      <div class="p-box"><label>⏳ Pendente</label><div class="val" style="color:#e53e3e">R$ ${totalPend.toFixed(2).replace('.',',')}</div></div>
+    </div>
+    <table class="tbl"><thead><tr>
+      <th>Mês</th><th>Fornecedor</th><th>Modelo</th>
+      <th class="r">Enviado</th><th class="r">Aprovado</th><th class="r">Perda</th>
+      <th class="r">Valor</th><th>Status</th>
+    </tr></thead><tbody>`;
+
+    rows.forEach(r=>{
+      const [a,m] = r.mes.split('-');
+      html+=`<tr>
+        <td>${m}/${a}</td><td>${r.fornecedor}</td>
+        <td style="font-size:12px">${r.modelo}</td>
+        <td class="r">${r.enviado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:#276749">${r.aprovado.toLocaleString('pt-BR')}</td>
+        <td class="r" style="color:${r.perda>0?'#e53e3e':'#718096'}">${r.perda.toLocaleString('pt-BR')}</td>
+        <td class="r" style="font-weight:700">R$ ${r.valor.toFixed(2).replace('.',',')}</td>
+        <td><span class="badge ${r.pago?'bg-green':'bg-yellow'}">${r.pago?'✅ Pago':'⏳ A Pagar'}</span></td>
+      </tr>`;
+    });
+    html+=`<tr style="background:#f0fff4;border-top:2px solid #9ae6b4">
+      <td colspan="6" style="font-weight:700;text-align:right">TOTAL</td>
+      <td class="r" style="font-weight:900;color:#276749">R$ ${totalGeral.toFixed(2).replace('.',',')}</td><td></td>
+    </tr></tbody></table>`;
+    el.innerHTML=html;
+  }catch(e){ el.innerHTML=`<p style="color:#e53e3e">${e.message}</p>`; }
+}
+
+
 </script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js'));</script>
 </body>
